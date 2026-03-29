@@ -36,6 +36,11 @@ const updateProjectSchema = projectMutationSchema.extend({
   id: z.string().min(1),
 });
 
+const moveProjectStatusSchema = z.object({
+  projectId: z.string().min(1),
+  status: z.nativeEnum(ProjectStatus),
+});
+
 type ProjectMutationResult =
   | { ok: true; projectId: string }
   | { ok: false; error: string };
@@ -293,6 +298,71 @@ export async function updateProjectAction(
       },
     }),
   ]);
+
+  revalidateProjectViews(project.id);
+
+  return {
+    ok: true,
+    projectId: project.id,
+  };
+}
+
+export async function moveProjectStatusAction(
+  input: z.input<typeof moveProjectStatusSchema>,
+): Promise<ProjectMutationResult> {
+  const user = await requireUser();
+  const parsed = moveProjectStatusSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Movimento de projeto inválido.",
+    };
+  }
+
+  const project = await db.project.findUnique({
+    where: {
+      id: parsed.data.projectId,
+    },
+    include: {
+      members: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return {
+      ok: false,
+      error: "Projeto não encontrado.",
+    };
+  }
+
+  if (!canManageProject(user, projectAccessShape(project))) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para mover este projeto.",
+    };
+  }
+
+  if (project.status === parsed.data.status) {
+    return {
+      ok: true,
+      projectId: project.id,
+    };
+  }
+
+  await db.project.update({
+    where: {
+      id: project.id,
+    },
+    data: {
+      status: parsed.data.status,
+    },
+  });
 
   revalidateProjectViews(project.id);
 

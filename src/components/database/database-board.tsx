@@ -1,4 +1,5 @@
 import { Box, Stack, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
 
 type DatabaseBoardProps = {
   children: React.ReactNode;
@@ -8,6 +9,8 @@ type DatabaseBoardColumnProps = {
   title: string;
   count: number;
   children: React.ReactNode;
+  highlighted?: boolean;
+  sx?: SxProps<Theme>;
 };
 
 type DatabaseBoardEmptyStateProps = {
@@ -51,6 +54,8 @@ export function DatabaseBoardColumn({
   title,
   count,
   children,
+  highlighted = false,
+  sx,
 }: DatabaseBoardColumnProps) {
   return (
     <Box
@@ -59,11 +64,13 @@ export function DatabaseBoardColumn({
         flex: "0 0 auto",
         borderRadius: 5,
         border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
+        borderColor: highlighted ? "secondary.main" : "divider",
+        bgcolor: highlighted ? "action.hover" : "background.paper",
         px: 1.75,
         py: 1.75,
         boxShadow: "0 18px 42px rgba(0, 0, 0, 0.14)",
+        transition: "border-color 180ms ease, background-color 180ms ease",
+        ...sx,
       }}
     >
       <Stack spacing={1.5}>

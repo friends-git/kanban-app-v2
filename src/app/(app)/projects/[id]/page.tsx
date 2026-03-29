@@ -7,18 +7,9 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  DatabaseBoard,
-  DatabaseBoardColumn,
-  DatabaseBoardEmptyState,
-} from "@/components/database/database-board";
-import {
-  DatabaseGroup,
-  DatabaseListHeader,
-  DatabaseRow,
-  DatabaseSurface,
-} from "@/components/database/database-list";
 import { ProjectTaskComposer } from "@/components/tasks/project-task-composer";
+import { TaskStatusBoardDnd } from "@/components/tasks/task-status-board-dnd";
+import { TaskStatusListDnd } from "@/components/tasks/task-status-list-dnd";
 import { AvatarStack } from "@/components/ui/avatar-stack";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EntityCard } from "@/components/ui/entity-card";
@@ -26,7 +17,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ProjectPropertiesPanel } from "@/components/ui/project-properties-panel";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { TaskCard } from "@/components/ui/task-card";
 import { TaskDrawer } from "@/components/ui/task-drawer";
 import { formatFullDate } from "@/lib/formatters";
 import { requireUser } from "@/server/auth/session";
@@ -216,119 +206,27 @@ export default async function ProjectDetailPage({
 
               {taskView === "board" ? (
                 project.board?.columns.length ? (
-                  <DatabaseBoard>
-                    {project.board.columns.map((column) => (
-                      <DatabaseBoardColumn
-                        key={column.id}
-                        title={column.name}
-                        count={column.tasks.length}
-                      >
-                        {column.tasks.length ? (
-                          column.tasks.map((task) => (
-                            <TaskCard
-                              key={task.id}
-                              task={task}
-                              href={`/projects/${project.id}?taskView=board&taskId=${task.id}`}
-                            />
-                          ))
-                        ) : (
-                          <DatabaseBoardEmptyState message="Sem tarefas nesta coluna." />
-                        )}
-                      </DatabaseBoardColumn>
-                    ))}
-                  </DatabaseBoard>
+                  <TaskStatusBoardDnd
+                    tasks={project.tasks.map((task) =>
+                      toProjectTaskBoardItem(
+                        task,
+                        `/projects/${project.id}?taskView=board&taskId=${task.id}`,
+                      ),
+                    )}
+                  />
                 ) : (
                   <EmptyState message="O quadro deste projeto ainda não foi configurado." />
                 )
               ) : project.tasks.length ? (
-                <DatabaseSurface>
-                  <DatabaseListHeader
-                    columns={{
-                      xs: "minmax(0, 1fr) auto",
-                      md: "minmax(0, 1.7fr) 140px 120px 120px",
-                    }}
-                  >
-                    <Box component="span">Tarefa</Box>
-                    <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-                      Responsáveis
-                    </Box>
-                    <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-                      Sprint
-                    </Box>
-                    <Box component="span">Prazo</Box>
-                  </DatabaseListHeader>
-
-                  {project.board?.columns.map((column) => {
-                    const items = project.tasks.filter(
-                      (task) => task.status === column.taskStatus,
-                    );
-
-                    return (
-                      <DatabaseGroup
-                        key={column.id}
-                        title={column.name}
-                        count={items.length}
-                        defaultExpanded={column.taskStatus !== "DONE"}
-                      >
-                        {items.length ? (
-                          items.map((task) => (
-                            <DatabaseRow
-                              key={task.id}
-                              href={`/projects/${project.id}?taskView=list&taskId=${task.id}`}
-                              columns={{
-                                xs: "minmax(0, 1fr) auto",
-                                md: "minmax(0, 1.7fr) 140px 120px 120px",
-                              }}
-                            >
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography fontWeight={700}>{task.title}</Typography>
-                                <Typography color="text.secondary" variant="body2" noWrap>
-                                  {task.code} • {task.summary ?? "Sem resumo"}
-                                </Typography>
-                                <Typography
-                                  color="text.secondary"
-                                  variant="caption"
-                                  sx={{ display: { xs: "block", md: "none" }, mt: 0.45 }}
-                                >
-                                  {task.sprint?.name ?? "Sem sprint"}
-                                </Typography>
-                              </Box>
-
-                              <Box sx={{ display: { xs: "none", md: "block" } }}>
-                                <AvatarStack
-                                  max={4}
-                                  items={task.assignees.map((assignee) => ({
-                                    id: assignee.user.id,
-                                    name: assignee.user.name,
-                                    avatarColor: assignee.user.avatarColor,
-                                  }))}
-                                />
-                              </Box>
-
-                              <Typography
-                                color="text.secondary"
-                                variant="body2"
-                                sx={{ display: { xs: "none", md: "block" } }}
-                              >
-                                {task.sprint?.name ?? "Sem sprint"}
-                              </Typography>
-
-                              <Typography color="text.secondary" variant="body2">
-                                {formatFullDate(task.dueDate)}
-                              </Typography>
-                            </DatabaseRow>
-                          ))
-                        ) : (
-                          <Box sx={{ px: 2, py: 1.5 }}>
-                            <Typography color="text.secondary" variant="body2">
-                              Nenhuma tarefa neste grupo.
-                            </Typography>
-                          </Box>
-                        )}
-                      </DatabaseGroup>
-                    );
-                  })}
-                </DatabaseSurface>
+                <TaskStatusListDnd
+                  tasks={project.tasks.map((task) =>
+                    toProjectTaskListItem(
+                      task,
+                      `/projects/${project.id}?taskView=list&taskId=${task.id}`,
+                    ),
+                  )}
+                  variant="project"
+                />
               ) : (
                 <EmptyState message="Nenhuma tarefa visível neste projeto." />
               )}
@@ -476,4 +374,78 @@ export default async function ProjectDetailPage({
       />
     </>
   );
+}
+
+function toProjectTaskBoardItem(
+  task: NonNullable<Awaited<ReturnType<typeof getProjectDetail>>>["tasks"][number],
+  href: string,
+) {
+  return {
+    id: task.id,
+    href,
+    code: task.code,
+    title: task.title,
+    summary: task.summary,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    project: {
+      id: task.project.id,
+      name: task.project.name,
+    },
+    sprint: task.sprint
+      ? {
+          id: task.sprint.id,
+          name: task.sprint.name,
+          status: task.sprint.status,
+        }
+      : null,
+    assignees: task.assignees.map((assignee) => ({
+      user: {
+        id: assignee.user.id,
+        name: assignee.user.name,
+        avatarColor: assignee.user.avatarColor,
+      },
+    })),
+    tags: task.tags.map((tagItem) => ({
+      tag: {
+        id: tagItem.tag.id,
+        name: tagItem.tag.name,
+        color: tagItem.tag.color,
+      },
+    })),
+  };
+}
+
+function toProjectTaskListItem(
+  task: NonNullable<Awaited<ReturnType<typeof getProjectDetail>>>["tasks"][number],
+  href: string,
+) {
+  return {
+    id: task.id,
+    href,
+    code: task.code,
+    title: task.title,
+    summary: task.summary,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    project: {
+      id: task.project.id,
+      name: task.project.name,
+    },
+    sprint: task.sprint
+      ? {
+          id: task.sprint.id,
+          name: task.sprint.name,
+        }
+      : null,
+    assignees: task.assignees.map((assignee) => ({
+      user: {
+        id: assignee.user.id,
+        name: assignee.user.name,
+        avatarColor: assignee.user.avatarColor,
+      },
+    })),
+  };
 }

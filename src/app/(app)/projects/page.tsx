@@ -9,23 +9,13 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import {
-  DatabaseBoard,
-  DatabaseBoardColumn,
-  DatabaseBoardEmptyState,
-} from "@/components/database/database-board";
-import {
-  DatabaseGroup,
-  DatabaseListHeader,
-  DatabaseRow,
-  DatabaseSurface,
-} from "@/components/database/database-list";
 import { ProjectQuickCreateCard } from "@/components/projects/project-quick-create-card";
+import { ProjectStatusBoardDnd } from "@/components/projects/project-status-board-dnd";
+import { ProjectStatusListDnd } from "@/components/projects/project-status-list-dnd";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EntityCard } from "@/components/ui/entity-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { ProjectCard } from "@/components/ui/project-card";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/formatters";
@@ -150,51 +140,7 @@ function renderProjectsView(
   }
 
   if (view === "board") {
-    const grouped = [
-      {
-        key: "PLANNING",
-        title: "Planejamento",
-        items: projects.filter((project) => project.status === "PLANNING"),
-      },
-      {
-        key: "ACTIVE",
-        title: "Ativos",
-        items: projects.filter((project) => project.status === "ACTIVE"),
-      },
-      {
-        key: "AT_RISK",
-        title: "Em risco",
-        items: projects.filter((project) => project.status === "AT_RISK"),
-      },
-      {
-        key: "COMPLETED",
-        title: "Fechados",
-        items: projects.filter(
-          (project) =>
-            project.status === "COMPLETED" || project.status === "ON_HOLD",
-        ),
-      },
-    ];
-
-    return (
-      <DatabaseBoard>
-        {grouped.map((column) => (
-          <DatabaseBoardColumn
-            key={column.key}
-            title={column.title}
-            count={column.items.length}
-          >
-            {column.items.length ? (
-              column.items.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))
-            ) : (
-              <DatabaseBoardEmptyState message="Nenhum projeto nesta coluna." />
-            )}
-          </DatabaseBoardColumn>
-        ))}
-      </DatabaseBoard>
-    );
+    return <ProjectStatusBoardDnd projects={projects.map(toProjectDndItem)} />;
   }
 
   if (view === "all") {
@@ -229,116 +175,54 @@ function renderProjectsView(
     );
   }
 
-  const groupedSections = [
-    {
-      title: "Ativos",
-      eyebrow: "Status",
-      items: projects.filter((project) => project.status === "ACTIVE"),
-    },
-    {
-      title: "Planejamento",
-      eyebrow: "Status",
-      items: projects.filter((project) => project.status === "PLANNING"),
-    },
-    {
-      title: "Em risco",
-      eyebrow: "Status",
-      items: projects.filter((project) => project.status === "AT_RISK"),
-    },
-  ].filter((section) => section.items.length);
-
   return (
     <Stack spacing={1.5}>
       <SectionHeading
         eyebrow="View principal"
         title="Projetos ativos"
-        meta={`${groupedSections.reduce((total, section) => total + section.items.length, 0)} projetos em andamento`}
+        meta={`${activeProjectsCount(projects)} projetos em andamento, com grupos completos para mover entre status.`}
       />
-
-      <DatabaseSurface>
-        <DatabaseListHeader
-          columns={{
-            xs: "minmax(0, 1fr) auto",
-            md: "minmax(0, 1.8fr) 140px 150px 120px 72px",
-          }}
-        >
-          <Box component="span">Projeto</Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Equipe
-          </Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Responsável
-          </Box>
-          <Box component="span">Prazo</Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Tarefas
-          </Box>
-        </DatabaseListHeader>
-
-        {groupedSections.map((section) => (
-          <DatabaseGroup
-            key={section.title}
-            title={section.title}
-            count={section.items.length}
-          >
-            {section.items.map((project) => (
-              <DatabaseRow
-                key={project.id}
-                href={`/projects/${project.id}`}
-                columns={{
-                  xs: "minmax(0, 1fr) auto",
-                  md: "minmax(0, 1.8fr) 140px 150px 120px 72px",
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography fontWeight={700}>{project.name}</Typography>
-                  <Typography color="text.secondary" variant="body2" noWrap>
-                    {project.summary}
-                  </Typography>
-                  <Typography
-                    color="text.secondary"
-                    variant="caption"
-                    sx={{ display: { xs: "block", md: "none" }, mt: 0.45 }}
-                  >
-                    {project.team?.name ?? "Sem equipe"} • {project.owner.name}
-                  </Typography>
-                </Box>
-
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  sx={{ display: { xs: "none", md: "block" } }}
-                >
-                  {project.team?.name ?? "Sem equipe"}
-                </Typography>
-
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  sx={{ display: { xs: "none", md: "block" } }}
-                >
-                  {project.owner.name}
-                </Typography>
-
-                <Typography color="text.secondary" variant="body2">
-                  {formatDate(project.dueDate)}
-                </Typography>
-
-                <Typography
-                  color="text.secondary"
-                  textAlign="right"
-                  variant="body2"
-                  sx={{ display: { xs: "none", md: "block" } }}
-                >
-                  {project._count.tasks}
-                </Typography>
-              </DatabaseRow>
-            ))}
-          </DatabaseGroup>
-        ))}
-      </DatabaseSurface>
+      <ProjectStatusListDnd projects={projects.map(toProjectDndItem)} />
     </Stack>
   );
+}
+
+function activeProjectsCount(
+  projects: Awaited<ReturnType<typeof listVisibleProjects>>,
+) {
+  return projects.filter(
+    (project) =>
+      project.status === "ACTIVE" ||
+      project.status === "PLANNING" ||
+      project.status === "AT_RISK",
+  ).length;
+}
+
+function toProjectDndItem(
+  project: Awaited<ReturnType<typeof listVisibleProjects>>[number],
+) {
+  return {
+    id: project.id,
+    name: project.name,
+    slug: project.slug,
+    summary: project.summary,
+    status: project.status,
+    visibility: project.visibility,
+    dueDate: project.dueDate?.toISOString() ?? null,
+    team: project.team ? { name: project.team.name } : null,
+    owner: { name: project.owner.name },
+    members: project.members.map((member) => ({
+      user: {
+        id: member.user.id,
+        name: member.user.name,
+        avatarColor: member.user.avatarColor,
+      },
+    })),
+    _count: {
+      tasks: project._count.tasks,
+      sprints: project._count.sprints,
+    },
+  };
 }
 
 function SectionHeading({

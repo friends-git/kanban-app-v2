@@ -66,6 +66,12 @@ const commentSchema = z.object({
   content: z.string().trim().min(1, "Escreva um comentário."),
 });
 
+const moveTaskSchema = z.object({
+  taskId: z.string().min(1),
+  status: z.nativeEnum(TaskStatus),
+  sprintId: z.string().nullable().optional(),
+});
+
 type ActionResult =
   | { ok: true; taskId: string }
   | { ok: false; error: string };
@@ -345,6 +351,108 @@ export async function updateTaskAction(
   return {
     ok: true,
     taskId: existingTask.id,
+  };
+}
+
+export async function moveTaskAction(
+  input: z.input<typeof moveTaskSchema>,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = moveTaskSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Movimento de tarefa inválido.",
+    };
+  }
+
+  const taskState = await getTaskForMutation(parsed.data.taskId, user);
+
+  if ("error" in taskState) {
+    return {
+      ok: false,
+      error: taskState.error ?? "Tarefa não encontrada.",
+    };
+  }
+
+  if (!taskState.canManage) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para mover esta tarefa.",
+    };
+  }
+
+  const nextSprintId =
+    parsed.data.sprintId === undefined
+      ? taskState.task.sprintId
+      : parsed.data.sprintId;
+
+  if (nextSprintId) {
+    const targetSprint = await db.sprint.findUnique({
+      where: {
+        id: nextSprintId,
+      },
+      select: {
+        id: true,
+        projectId: true,
+      },
+    });
+
+    if (!targetSprint || targetSprint.projectId !== taskState.task.project.id) {
+      return {
+        ok: false,
+        error: "A sprint de destino não pertence ao projeto da tarefa.",
+      };
+    }
+  }
+
+  if (
+    taskState.task.status === parsed.data.status &&
+    taskState.task.sprintId === nextSprintId
+  ) {
+    return {
+      ok: true,
+      taskId: taskState.task.id,
+    };
+  }
+
+  const boardColumnId = await getBoardColumnId(
+    taskState.task.project.id,
+    parsed.data.status,
+  );
+  const completedAt =
+    parsed.data.status === TaskStatus.DONE
+      ? taskState.task.completedAt ?? new Date()
+      : null;
+
+  await db.task.update({
+    where: {
+      id: taskState.task.id,
+    },
+    data: {
+      status: parsed.data.status,
+      sprintId: nextSprintId,
+      boardColumnId,
+      completedAt,
+      historyEntries: {
+        create: {
+          actorId: user.id,
+          type: "updated",
+          description:
+            parsed.data.sprintId === undefined
+              ? "Moveu a tarefa entre status."
+              : "Moveu a tarefa entre status e sprint.",
+        },
+      },
+    },
+  });
+
+  revalidateTaskViews(taskState.task.project.id);
+
+  return {
+    ok: true,
+    taskId: taskState.task.id,
   };
 }
 

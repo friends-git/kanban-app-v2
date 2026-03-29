@@ -1,22 +1,19 @@
 import { AddRounded } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Link from "next/link";
-import { TaskStatus } from "@prisma/client";
-import {
-  DatabaseBoard,
-  DatabaseBoardColumn,
-  DatabaseBoardEmptyState,
-} from "@/components/database/database-board";
+import { SprintStatus, TaskStatus } from "@prisma/client";
 import {
   DatabaseGroup,
   DatabaseListHeader,
   DatabaseRow,
   DatabaseSurface,
 } from "@/components/database/database-list";
+import { TaskSprintBoardsDnd } from "@/components/tasks/task-sprint-boards-dnd";
+import { TaskStatusBoardDnd } from "@/components/tasks/task-status-board-dnd";
+import { TaskStatusListDnd } from "@/components/tasks/task-status-list-dnd";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
-import { TaskCard } from "@/components/ui/task-card";
 import { TaskDrawer } from "@/components/ui/task-drawer";
 import { AvatarStack } from "@/components/ui/avatar-stack";
 import { TaskQuickCreateDialog } from "@/components/tasks/task-quick-create-dialog";
@@ -47,6 +44,11 @@ const statusOrder = [
   "REVIEW",
   "DONE",
 ] as const satisfies readonly TaskStatus[];
+const sprintStatusOrder = [
+  "ACTIVE",
+  "PLANNED",
+  "COMPLETED",
+] as const satisfies readonly SprintStatus[];
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const user = await requireUser();
@@ -182,12 +184,6 @@ function renderTasksView(
   tasks: Awaited<ReturnType<typeof listVisibleTasks>>,
 ) {
   if (view === "board") {
-    const grouped = statusOrder.map((status) => ({
-      key: status,
-      title: taskStatusLabels[status],
-      items: tasks.filter((task) => task.status === status),
-    }));
-
     return (
       <Stack spacing={1.5}>
         <ViewLead
@@ -195,28 +191,10 @@ function renderTasksView(
           title="Quadro global"
           meta="Todas as tarefas do workspace distribuídas nas mesmas colunas da database."
         />
-        <DatabaseBoard>
-          {grouped.map((column) => (
-            <DatabaseBoardColumn
-              key={column.key}
-              title={column.title}
-              count={column.items.length}
-            >
-              {column.items.length ? (
-                column.items.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    href={`/tasks?view=board&taskId=${task.id}`}
-                    contextLabel={task.project.name}
-                  />
-                ))
-              ) : (
-                <DatabaseBoardEmptyState message="Nenhuma tarefa nesta coluna." />
-              )}
-            </DatabaseBoardColumn>
-          ))}
-        </DatabaseBoard>
+        <TaskStatusBoardDnd
+          tasks={tasks.map((task) => toTaskDndBoardItem(task, `/tasks?view=board&taskId=${task.id}`))}
+          showProjectContext
+        />
       </Stack>
     );
   }
@@ -293,106 +271,101 @@ function renderTasksView(
     );
   }
 
-  if (view === "sprint" || view === "current") {
-    const baseTasks =
-      view === "current"
-        ? tasks.filter((task) => task.sprint?.status === "ACTIVE")
-        : tasks;
+  if (view === "current") {
+    const currentSprintTasks = tasks.filter((task) => task.sprint?.status === "ACTIVE");
 
-    if (!baseTasks.length) {
+    if (!currentSprintTasks.length) {
       return (
         <EmptyState
           title="Sem tarefas nesta view"
-          message={
-            view === "current"
-              ? "Nenhuma tarefa vinculada à sprint ativa agora."
-              : "Nenhuma tarefa agrupável por sprint."
-          }
+          message="Nenhuma tarefa vinculada à sprint ativa agora."
         />
       );
     }
-
-    const grouped = toSortedGroups(
-      groupBy(baseTasks, (task) => task.sprint?.name ?? "Sem sprint"),
-    );
 
     return (
       <Stack spacing={1.5}>
         <ViewLead
           eyebrow="View"
-          title={view === "current" ? "Sprint atual" : "Agrupado por sprint"}
-          meta={
-            view === "current"
-              ? "Foco total na janela ativa de execução."
-              : "Leitura da database organizada por ciclos."
-          }
+          title="Sprint atual"
+          meta="Quadro focado na janela ativa de execução, distribuindo as tarefas por status."
         />
-        <DatabaseSurface>
-          <DatabaseListHeader
-            columns={{
-              xs: "minmax(0, 1fr) auto",
-              md: "minmax(0, 1.8fr) 150px 120px 120px",
-            }}
-          >
-            <Box component="span">Tarefa</Box>
-            <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-              Projeto
-            </Box>
-            <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-              Status
-            </Box>
-            <Box component="span">Prazo</Box>
-          </DatabaseListHeader>
-
-          {grouped.map(([sprintName, items]) => (
-            <DatabaseGroup key={sprintName} title={sprintName} count={items.length}>
-              {items.map((task) => (
-                <DatabaseRow
-                  key={task.id}
-                  href={`/tasks?view=${view}&taskId=${task.id}`}
-                  columns={{
-                    xs: "minmax(0, 1fr) auto",
-                    md: "minmax(0, 1.8fr) 150px 120px 120px",
-                  }}
-                >
-                  <TaskTitleCell
-                    title={task.title}
-                    summary={`${task.code} • ${task.summary ?? "Sem resumo"}`}
-                    mobileMeta={<>{task.project.name}</>}
-                  />
-                  <Typography
-                    color="text.secondary"
-                    variant="body2"
-                    sx={{ display: { xs: "none", md: "block" } }}
-                  >
-                    {task.project.name}
-                  </Typography>
-                  <Typography
-                    color="text.secondary"
-                    variant="body2"
-                    sx={{ display: { xs: "none", md: "block" } }}
-                  >
-                    {taskStatusLabels[task.status]}
-                  </Typography>
-                  <Typography color="text.secondary" variant="body2">
-                    {formatDate(task.dueDate)}
-                  </Typography>
-                </DatabaseRow>
-              ))}
-            </DatabaseGroup>
-          ))}
-        </DatabaseSurface>
+        <TaskStatusBoardDnd
+          tasks={currentSprintTasks.map((task) =>
+            toTaskDndBoardItem(task, `/tasks?view=current&taskId=${task.id}`),
+          )}
+          showProjectContext
+        />
       </Stack>
     );
   }
 
-  const grouped = statusOrder
-    .map((status) => ({
-      key: status,
-      title: taskStatusLabels[status],
-      items: tasks.filter((task) => task.status === status),
-    }))
-    .filter((group) => group.items.length);
+  if (view === "sprint") {
+    const sprintGroups = Array.from(
+      tasks.reduce<
+        Map<
+          string,
+          {
+            id: string;
+            name: string;
+            status: SprintStatus;
+            items: typeof tasks;
+          }
+        >
+      >((groups, task) => {
+        if (!task.sprint) {
+          return groups;
+        }
+
+        const current = groups.get(task.sprint.id) ?? {
+          id: task.sprint.id,
+          name: task.sprint.name,
+          status: task.sprint.status,
+          items: [],
+        };
+
+        current.items.push(task);
+        groups.set(task.sprint.id, current);
+        return groups;
+      }, new Map()),
+    )
+      .map(([, group]) => group)
+      .sort(
+        (left, right) =>
+          sprintStatusOrder.indexOf(left.status) - sprintStatusOrder.indexOf(right.status) ||
+          left.name.localeCompare(right.name),
+      );
+
+    if (!sprintGroups.length) {
+      return (
+        <EmptyState
+          title="Sem tarefas nesta view"
+          message="Nenhuma tarefa vinculada a uma sprint no momento."
+        />
+      );
+    }
+
+    return (
+      <Stack spacing={1.5}>
+        <ViewLead
+          eyebrow="View"
+          title="Quadros por sprint"
+          meta="Cada sprint pode ser aberta ou fechada, mantendo um quadro próprio distribuído por status."
+        />
+        <TaskSprintBoardsDnd
+          tasks={tasks
+            .filter((task) => task.sprint)
+            .map((task) => toTaskDndBoardItem(task, `/tasks?view=sprint&taskId=${task.id}`))}
+          sprints={sprintGroups.map((group) => ({
+            id: group.id,
+            name: group.name,
+            status: group.status,
+            projectId: group.items[0]?.project.id ?? "",
+          }))}
+        />
+      </Stack>
+    );
+  }
 
   return (
     <Stack spacing={1.5}>
@@ -401,86 +374,86 @@ function renderTasksView(
         title="Todas as tarefas"
         meta="Uma leitura silenciosa da database completa, agrupada por status."
       />
-      <DatabaseSurface>
-        <DatabaseListHeader
-          columns={{
-            xs: "minmax(0, 1fr) auto",
-            md: "minmax(0, 1.9fr) 150px 120px 120px 120px",
-          }}
-        >
-          <Box component="span">Tarefa</Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Projeto
-          </Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Sprint
-          </Box>
-          <Box component="span" sx={{ display: { xs: "none", md: "block" } }}>
-            Responsáveis
-          </Box>
-          <Box component="span">Prazo</Box>
-        </DatabaseListHeader>
-
-        {grouped.map((group) => (
-          <DatabaseGroup
-            key={group.key}
-            title={group.title}
-            count={group.items.length}
-            defaultExpanded={group.key !== "DONE"}
-          >
-            {group.items.map((task) => (
-              <DatabaseRow
-                key={task.id}
-                href={`/tasks?view=list&taskId=${task.id}`}
-                columns={{
-                  xs: "minmax(0, 1fr) auto",
-                  md: "minmax(0, 1.9fr) 150px 120px 120px 120px",
-                }}
-              >
-                <TaskTitleCell
-                  title={task.title}
-                  summary={`${task.code} • ${task.summary ?? "Sem resumo"}`}
-                  mobileMeta={
-                    <>
-                      {task.project.name}
-                      {task.sprint ? ` • ${task.sprint.name}` : ""}
-                    </>
-                  }
-                />
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  sx={{ display: { xs: "none", md: "block" } }}
-                >
-                  {task.project.name}
-                </Typography>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  sx={{ display: { xs: "none", md: "block" } }}
-                >
-                  {task.sprint?.name ?? "Sem sprint"}
-                </Typography>
-                <Box sx={{ display: { xs: "none", md: "block" } }}>
-                  <AvatarStack
-                    max={4}
-                    items={task.assignees.map((assignee) => ({
-                      id: assignee.user.id,
-                      name: assignee.user.name,
-                      avatarColor: assignee.user.avatarColor,
-                    }))}
-                  />
-                </Box>
-                <Typography color="text.secondary" variant="body2">
-                  {formatDate(task.dueDate)}
-                </Typography>
-              </DatabaseRow>
-            ))}
-          </DatabaseGroup>
-        ))}
-      </DatabaseSurface>
+      <TaskStatusListDnd
+        tasks={tasks.map((task) => toTaskDndListItem(task, `/tasks?view=list&taskId=${task.id}`))}
+        variant="workspace"
+      />
     </Stack>
   );
+}
+
+function toTaskDndBoardItem(
+  task: Awaited<ReturnType<typeof listVisibleTasks>>[number],
+  href: string,
+) {
+  return {
+    id: task.id,
+    href,
+    code: task.code,
+    title: task.title,
+    summary: task.summary,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    project: {
+      id: task.project.id,
+      name: task.project.name,
+    },
+    sprint: task.sprint
+      ? {
+          id: task.sprint.id,
+          name: task.sprint.name,
+          status: task.sprint.status,
+        }
+      : null,
+    assignees: task.assignees.map((assignee) => ({
+      user: {
+        id: assignee.user.id,
+        name: assignee.user.name,
+        avatarColor: assignee.user.avatarColor,
+      },
+    })),
+    tags: task.tags.map((tagItem) => ({
+      tag: {
+        id: tagItem.tag.id,
+        name: tagItem.tag.name,
+        color: tagItem.tag.color,
+      },
+    })),
+  };
+}
+
+function toTaskDndListItem(
+  task: Awaited<ReturnType<typeof listVisibleTasks>>[number],
+  href: string,
+) {
+  return {
+    id: task.id,
+    href,
+    code: task.code,
+    title: task.title,
+    summary: task.summary,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    project: {
+      id: task.project.id,
+      name: task.project.name,
+    },
+    sprint: task.sprint
+      ? {
+          id: task.sprint.id,
+          name: task.sprint.name,
+        }
+      : null,
+    assignees: task.assignees.map((assignee) => ({
+      user: {
+        id: assignee.user.id,
+        name: assignee.user.name,
+        avatarColor: assignee.user.avatarColor,
+      },
+    })),
+  };
 }
 
 function mapTaskToDrawerTask(

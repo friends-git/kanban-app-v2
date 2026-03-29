@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ExpandMoreRounded } from "@mui/icons-material";
 import { Box, Collapse, Stack, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
 import Link from "next/link";
 
 type DatabaseSurfaceProps = {
@@ -14,12 +15,15 @@ type DatabaseGroupProps = {
   count: number;
   defaultExpanded?: boolean;
   children: React.ReactNode;
+  highlighted?: boolean;
+  contentSx?: SxProps<Theme>;
 };
 
 type DatabaseRowProps = {
   href?: string;
   columns: string | Record<string, string>;
   children: React.ReactNode;
+  sx?: SxProps<Theme>;
 };
 
 type DatabaseListHeaderProps = {
@@ -83,6 +87,8 @@ export function DatabaseGroup({
   count,
   defaultExpanded = true,
   children,
+  highlighted = false,
+  contentSx,
 }: DatabaseGroupProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -90,7 +96,8 @@ export function DatabaseGroup({
     <Box
       sx={{
         borderBottom: "1px solid",
-        borderColor: "divider",
+        borderColor: highlighted ? "secondary.main" : "divider",
+        transition: "border-color 180ms ease",
         "&:last-of-type": {
           borderBottom: "none",
         },
@@ -109,7 +116,7 @@ export function DatabaseGroup({
           px: 2.25,
           py: 1.2,
           border: 0,
-          bgcolor: "transparent",
+          bgcolor: highlighted ? "action.hover" : "transparent",
           cursor: "pointer",
           textAlign: "left",
           transition: "background-color 180ms ease",
@@ -155,6 +162,7 @@ export function DatabaseGroup({
               borderTop: "1px solid",
               borderColor: "divider",
             },
+            ...contentSx,
           }}
         >
           {children}
@@ -164,7 +172,7 @@ export function DatabaseGroup({
   );
 }
 
-export function DatabaseRow({ href, columns, children }: DatabaseRowProps) {
+export function DatabaseRow({ href, columns, children, sx }: DatabaseRowProps) {
   const content = (
     <Box
       sx={{
@@ -179,6 +187,7 @@ export function DatabaseRow({ href, columns, children }: DatabaseRowProps) {
         "&:hover": {
           bgcolor: "action.hover",
         },
+        ...sx,
       }}
     >
       {children}
