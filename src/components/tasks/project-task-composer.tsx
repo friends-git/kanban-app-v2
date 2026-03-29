@@ -32,7 +32,6 @@ import {
 
 type ProjectTaskComposerProps = {
   cancelHref: string;
-  openTaskHref: (taskId: string) => string;
   project: {
     id: string;
     sprints: Array<{
@@ -61,7 +60,6 @@ type TaskCreateFormState = {
 
 export function ProjectTaskComposer({
   cancelHref,
-  openTaskHref,
   project,
   users,
 }: ProjectTaskComposerProps) {
@@ -105,7 +103,9 @@ export function ProjectTaskComposer({
         return;
       }
 
-      router.push(openTaskHref(result.taskId));
+      router.push(
+        `${cancelHref}${cancelHref.includes("?") ? "&" : "?"}taskId=${result.taskId}`,
+      );
       router.refresh();
     });
   };
@@ -113,33 +113,53 @@ export function ProjectTaskComposer({
   return (
     <Box
       sx={{
-        p: { xs: 1.5, md: 2 },
+        p: { xs: 2, md: 2.5 },
         borderRadius: 5,
         border: "1px solid",
         borderColor: "divider",
         bgcolor: "action.hover",
       }}
     >
-      <Stack spacing={1.5}>
+      <Stack spacing={2}>
         <Stack
           direction={{ xs: "column", md: "row" }}
           justifyContent="space-between"
-          spacing={1.25}
+          spacing={{ xs: 1.5, md: 2 }}
+          alignItems={{ xs: "stretch", md: "flex-start" }}
         >
-          <Box>
+          <Stack spacing={0.75} sx={{ maxWidth: 640 }}>
             <Typography variant="overline" sx={{ color: "secondary.main", letterSpacing: "0.14em" }}>
               Nova tarefa
             </Typography>
             <Typography variant="body2" color="text.secondary">
               A tarefa nasce já no contexto do projeto e pode abrir direto no drawer.
             </Typography>
-          </Box>
+          </Stack>
 
-          <Stack direction="row" spacing={1}>
-            <Button component={Link} href={cancelHref} variant="outlined" size="small">
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            flexWrap="wrap"
+            justifyContent={{ xs: "stretch", sm: "flex-end" }}
+            sx={{ alignSelf: { xs: "stretch", md: "flex-start" } }}
+          >
+            <Button
+              component={Link}
+              href={cancelHref}
+              variant="outlined"
+              size="small"
+              sx={{ minWidth: { xs: "100%", sm: 0 } }}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} variant="contained" size="small" disabled={isPending}>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              size="small"
+              disabled={isPending}
+              sx={{ minWidth: { xs: "100%", sm: 0 } }}
+            >
               {isPending ? "Criando..." : "Criar tarefa"}
             </Button>
           </Stack>
@@ -149,6 +169,7 @@ export function ProjectTaskComposer({
 
         <TextField
           autoFocus
+          size="small"
           label="Título"
           placeholder="Ex.: Implementar database de tarefas do projeto"
           value={form.title}
@@ -160,7 +181,7 @@ export function ProjectTaskComposer({
         <Box
           sx={{
             display: "grid",
-            gap: 1.25,
+            gap: 1.5,
             gridTemplateColumns: {
               xs: "1fr",
               lg: "repeat(3, minmax(0, 1fr))",
@@ -168,6 +189,7 @@ export function ProjectTaskComposer({
           }}
         >
           <TextField
+            size="small"
             label="Sprint"
             select
             value={form.sprintId}
@@ -184,6 +206,7 @@ export function ProjectTaskComposer({
           </TextField>
 
           <TextField
+            size="small"
             label="Responsáveis"
             select
             SelectProps={{
@@ -210,6 +233,7 @@ export function ProjectTaskComposer({
           </TextField>
 
           <TextField
+            size="small"
             label="Prazo"
             type="date"
             value={form.dueDate}
@@ -220,7 +244,7 @@ export function ProjectTaskComposer({
           />
         </Box>
 
-        <Box>
+        <Box sx={{ pt: 0.25 }}>
           <Button
             onClick={() => setShowAdvanced((current) => !current)}
             variant="text"
@@ -239,11 +263,11 @@ export function ProjectTaskComposer({
           </Button>
 
           <Collapse in={showAdvanced} timeout={180}>
-            <Stack spacing={1.25} sx={{ mt: 1.25 }}>
+            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
               <Box
                 sx={{
                   display: "grid",
-                  gap: 1.25,
+                  gap: 1.5,
                   gridTemplateColumns: {
                     xs: "1fr",
                     lg: "repeat(3, minmax(0, 1fr))",
@@ -251,6 +275,7 @@ export function ProjectTaskComposer({
                 }}
               >
                 <TextField
+                  size="small"
                   label="Status"
                   select
                   value={form.status}
@@ -269,6 +294,7 @@ export function ProjectTaskComposer({
                 </TextField>
 
                 <TextField
+                  size="small"
                   label="Prioridade"
                   select
                   value={form.priority}
@@ -287,6 +313,7 @@ export function ProjectTaskComposer({
                 </TextField>
 
                 <TextField
+                  size="small"
                   label="Tipo"
                   select
                   value={form.type}
@@ -305,6 +332,7 @@ export function ProjectTaskComposer({
                 </TextField>
 
                 <TextField
+                  size="small"
                   label="Visibilidade"
                   select
                   value={form.visibility}
@@ -323,6 +351,7 @@ export function ProjectTaskComposer({
                 </TextField>
 
                 <TextField
+                  size="small"
                   label="Bloqueio"
                   select
                   value={form.blocked ? "yes" : "no"}

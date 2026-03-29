@@ -201,9 +201,6 @@ export default async function ProjectDetailPage({
               {composerOpen && canCreateTasks && taskFormOptions ? (
                 <ProjectTaskComposer
                   cancelHref={`/projects/${project.id}?taskView=${taskView}`}
-                  openTaskHref={(taskId) =>
-                    `/projects/${project.id}?taskView=${taskView}&taskId=${taskId}`
-                  }
                   project={{
                     id: project.id,
                     sprints: project.sprints.map((sprint) => ({

@@ -140,7 +140,6 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         {composerOpen && canCreateAnyTask ? (
           <TaskQuickCreateDialog
             cancelHref={`/tasks?view=${currentView}`}
-            openTaskHref={(taskId) => `/tasks?view=${currentView}&taskId=${taskId}`}
             projects={taskFormOptions.projects.map((project) => ({
               id: project.id,
               name: project.name,

@@ -35,7 +35,6 @@ import {
 
 type TaskQuickCreateDialogProps = {
   cancelHref: string;
-  openTaskHref: (taskId: string) => string;
   projects: Array<{
     id: string;
     name: string;
@@ -66,7 +65,6 @@ type TaskCreateFormState = {
 
 export function TaskQuickCreateDialog({
   cancelHref,
-  openTaskHref,
   projects,
   users,
 }: TaskQuickCreateDialogProps) {
@@ -119,7 +117,9 @@ export function TaskQuickCreateDialog({
         return;
       }
 
-      router.push(openTaskHref(result.taskId));
+      router.push(
+        `${cancelHref}${cancelHref.includes("?") ? "&" : "?"}taskId=${result.taskId}`,
+      );
       router.refresh();
     });
   };
@@ -153,11 +153,12 @@ export function TaskQuickCreateDialog({
       </DialogTitle>
 
       <DialogContent sx={{ px: { xs: 2.5, md: 3 }, pb: 0 }}>
-        <Stack spacing={2}>
+        <Stack spacing={2.25}>
           {error ? <Alert severity="error">{error}</Alert> : null}
 
           <TextField
             autoFocus
+            size="small"
             label="Título"
             placeholder="Ex.: Refinar database global de tarefas"
             value={form.title}
@@ -169,7 +170,7 @@ export function TaskQuickCreateDialog({
           <Box
             sx={{
               display: "grid",
-              gap: 1.25,
+              gap: 1.5,
               gridTemplateColumns: {
                 xs: "1fr",
                 md: "repeat(3, minmax(0, 1fr))",
@@ -177,6 +178,7 @@ export function TaskQuickCreateDialog({
             }}
           >
             <TextField
+              size="small"
               label="Projeto"
               select
               value={form.projectId}
@@ -196,6 +198,7 @@ export function TaskQuickCreateDialog({
             </TextField>
 
             <TextField
+              size="small"
               label="Sprint"
               select
               value={form.sprintId}
@@ -212,6 +215,7 @@ export function TaskQuickCreateDialog({
             </TextField>
 
             <TextField
+              size="small"
               label="Prazo"
               type="date"
               value={form.dueDate}
@@ -223,6 +227,7 @@ export function TaskQuickCreateDialog({
           </Box>
 
           <TextField
+            size="small"
             label="Responsáveis"
             select
             SelectProps={{
@@ -248,7 +253,7 @@ export function TaskQuickCreateDialog({
             ))}
           </TextField>
 
-          <Box>
+          <Box sx={{ pt: 0.25 }}>
             <Button
               onClick={() => setShowAdvanced((current) => !current)}
               variant="text"
@@ -266,11 +271,11 @@ export function TaskQuickCreateDialog({
               Mais propriedades
             </Button>
             <Collapse in={showAdvanced} timeout={180}>
-              <Stack spacing={1.25} sx={{ mt: 1.25 }}>
+              <Stack spacing={1.5} sx={{ mt: 1.5 }}>
                 <Box
                   sx={{
                     display: "grid",
-                    gap: 1.25,
+                    gap: 1.5,
                     gridTemplateColumns: {
                       xs: "1fr",
                       md: "repeat(3, minmax(0, 1fr))",
@@ -278,6 +283,7 @@ export function TaskQuickCreateDialog({
                   }}
                 >
                   <TextField
+                    size="small"
                     label="Status"
                     select
                     value={form.status}
@@ -296,6 +302,7 @@ export function TaskQuickCreateDialog({
                   </TextField>
 
                   <TextField
+                    size="small"
                     label="Prioridade"
                     select
                     value={form.priority}
@@ -314,6 +321,7 @@ export function TaskQuickCreateDialog({
                   </TextField>
 
                   <TextField
+                    size="small"
                     label="Tipo"
                     select
                     value={form.type}
@@ -332,6 +340,7 @@ export function TaskQuickCreateDialog({
                   </TextField>
 
                   <TextField
+                    size="small"
                     label="Visibilidade"
                     select
                     value={form.visibility}
@@ -350,6 +359,7 @@ export function TaskQuickCreateDialog({
                   </TextField>
 
                   <TextField
+                    size="small"
                     label="Bloqueio"
                     select
                     value={form.blocked ? "yes" : "no"}
@@ -384,7 +394,13 @@ export function TaskQuickCreateDialog({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: { xs: 2.5, md: 3 }, py: { xs: 2, md: 2.5 } }}>
+      <DialogActions
+        sx={{
+          px: { xs: 2.5, md: 3 },
+          py: { xs: 2, md: 2.5 },
+          gap: 1,
+        }}
+      >
         <Button onClick={handleClose} variant="outlined">
           Cancelar
         </Button>
