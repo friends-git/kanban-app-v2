@@ -1,10 +1,10 @@
-import { Alert, Box, Stack, TableCell, TableRow, Typography } from "@mui/material";
+import { Alert, Box, Stack } from "@mui/material";
+import { AdminUserCreateForm } from "@/components/admin/admin-user-create-form";
+import { AdminUserManagementTable } from "@/components/admin/admin-user-management-table";
 import { RoleDistributionChart } from "@/components/charts/role-distribution-chart";
-import { DataTable } from "@/components/ui/data-table";
 import { EntityCard } from "@/components/ui/entity-card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { requireUser } from "@/server/auth/session";
 import { getAdminPageData } from "@/server/services/workspace";
 
@@ -61,31 +61,19 @@ export default async function AdminPage() {
       </EntityCard>
 
       <EntityCard
+        eyebrow="Acesso"
+        title="Cadastrar novo usuário"
+        description="Crie um acesso com e-mail padronizado da plataforma e senha inicial controlada pelo admin."
+      >
+        <AdminUserCreateForm />
+      </EntityCard>
+
+      <EntityCard
         eyebrow="Usuários"
         title="Usuários do workspace"
-        description="Resumo de participantes, papéis e vínculos com equipes e projetos."
+        description="Gerencie papéis globais e recupere o acesso de quem precisar voltar ao workspace."
       >
-        <DataTable columns={["Nome", "Papel", "E-mail", "Projetos", "Equipes", "Tarefas"]}>
-          {data.users.map((workspaceUser) => (
-            <TableRow key={workspaceUser.id} hover>
-              <TableCell>
-                <Box>
-                  <Typography fontWeight={700}>{workspaceUser.name}</Typography>
-                  <Typography color="text.secondary" variant="body2">
-                    {workspaceUser.title ?? "Sem título"}
-                  </Typography>
-                </Box>
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={workspaceUser.role} />
-              </TableCell>
-              <TableCell>{workspaceUser.email}</TableCell>
-              <TableCell>{workspaceUser._count.projectMemberships}</TableCell>
-              <TableCell>{workspaceUser._count.teamMemberships}</TableCell>
-              <TableCell>{workspaceUser._count.taskAssignments}</TableCell>
-            </TableRow>
-          ))}
-        </DataTable>
+        <AdminUserManagementTable currentUserId={user.id} users={data.users} />
       </EntityCard>
     </Stack>
   );

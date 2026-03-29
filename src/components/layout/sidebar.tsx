@@ -91,6 +91,9 @@ export function Sidebar({ showAdmin, user }: SidebarProps) {
               </Typography>
             </Box>
           </Stack>
+          <Button component={Link} href="/profile" fullWidth variant="text">
+            Meu perfil
+          </Button>
           <form action={logoutAction}>
             <Button fullWidth type="submit" variant="outlined">
               Sair

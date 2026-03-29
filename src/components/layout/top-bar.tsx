@@ -16,6 +16,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
 import { roleLabels } from "@/lib/domain";
 import { useAppColorMode } from "@/components/providers/app-providers";
 
@@ -75,7 +76,15 @@ export function TopBar({ user }: TopBarProps) {
           </IconButton>
           <Chip label={roleLabels[user.role]} color="secondary" variant="outlined" />
           <Stack direction="row" spacing={1} alignItems="center">
-            <Avatar sx={{ bgcolor: user.avatarColor ?? "secondary.main" }}>
+            <Avatar
+              component={Link}
+              href="/profile"
+              sx={{
+                bgcolor: user.avatarColor ?? "secondary.main",
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+            >
               {user.name.charAt(0)}
             </Avatar>
           </Stack>

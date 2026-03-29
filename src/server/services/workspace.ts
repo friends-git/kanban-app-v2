@@ -442,6 +442,71 @@ export async function getDashboardData(user: Viewer) {
   };
 }
 
+export async function getProfilePageData(user: Viewer) {
+  const tasks = await listVisibleTasks(user);
+  const today = startOfDay(new Date());
+  const allAssignedTasks = tasks.filter((task) =>
+    task.assignees.some((assignee) => assignee.userId === user.id),
+  );
+  const openTasks = allAssignedTasks.filter((task) => task.status !== TaskStatus.DONE);
+  const completedTasks = allAssignedTasks.filter((task) => task.status === TaskStatus.DONE);
+  const overdueTasks = openTasks.filter(
+    (task) => task.dueDate && startOfDay(task.dueDate) < today,
+  );
+  const upcomingTasks = openTasks
+    .filter((task) => task.dueDate && startOfDay(task.dueDate) >= today)
+    .slice(0, 5);
+  const recentCompleted = [...completedTasks]
+    .sort((left, right) => {
+      const leftDate = left.completedAt ?? left.updatedAt;
+      const rightDate = right.completedAt ?? right.updatedAt;
+
+      return rightDate.getTime() - leftDate.getTime();
+    })
+    .slice(0, 5);
+  const projectsCount = new Set(allAssignedTasks.map((task) => task.project.id)).size;
+  const activeSprintCount = new Set(
+    allAssignedTasks
+      .filter((task) => task.sprint?.status === "ACTIVE")
+      .map((task) => task.sprint?.id),
+  ).size;
+  const completionRate = allAssignedTasks.length
+    ? Math.round((completedTasks.length / allAssignedTasks.length) * 100)
+    : 0;
+  const completedWithDueDate = completedTasks.filter(
+    (task) => task.dueDate && task.completedAt,
+  );
+  const onTimeCompletions = completedWithDueDate.filter(
+    (task) => task.completedAt && task.dueDate && task.completedAt <= task.dueDate,
+  ).length;
+  const onTimeRate = completedWithDueDate.length
+    ? Math.round((onTimeCompletions / completedWithDueDate.length) * 100)
+    : null;
+  const statusBreakdown = Object.values(TaskStatus).map((status) => ({
+    status,
+    label: taskStatusLabels[status],
+    value: allAssignedTasks.filter((task) => task.status === status).length,
+  }));
+
+  return {
+    allAssignedTasks,
+    openTasks: openTasks.slice(0, 5),
+    upcomingTasks,
+    recentCompleted,
+    statusBreakdown,
+    stats: {
+      assignedTasks: allAssignedTasks.length,
+      openTasks: openTasks.length,
+      completedTasks: completedTasks.length,
+      overdueTasks: overdueTasks.length,
+      projectsCount,
+      activeSprintCount,
+      completionRate,
+      onTimeRate,
+    },
+  };
+}
+
 export async function getCalendarPageData(user: Viewer) {
   const [tasks, sprints] = await Promise.all([
     listVisibleTasks(user),
