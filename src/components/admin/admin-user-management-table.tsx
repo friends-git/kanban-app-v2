@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { PLATFORM_RESET_PASSWORD } from "@/lib/auth";
 import { roleLabels } from "@/lib/domain";
 import {
+  deleteUserAction,
   resetUserPasswordAction,
   updateUserRoleAction,
 } from "@/server/actions/users";
@@ -107,6 +108,33 @@ export function AdminUserManagementTable({
     });
   };
 
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (
+      !window.confirm(
+        `Excluir ${userName} do workspace? Projetos e tarefas de autoria serão transferidos para o admin responsável.`,
+      )
+    ) {
+      return;
+    }
+
+    setFeedback(null);
+    setPendingUserId(userId);
+
+    startTransition(async () => {
+      const result = await deleteUserAction({ userId });
+
+      if (!result.ok) {
+        setFeedback({ type: "error", text: result.error });
+        setPendingUserId(null);
+        return;
+      }
+
+      setFeedback({ type: "success", text: result.message });
+      setPendingUserId(null);
+      router.refresh();
+    });
+  };
+
   return (
     <Stack spacing={2}>
       {feedback ? <Alert severity={feedback.type}>{feedback.text}</Alert> : null}
@@ -114,7 +142,8 @@ export function AdminUserManagementTable({
       <Typography color="text.secondary" variant="body2">
         Use esta tabela para ajustar o papel global de cada pessoa e redefinir o
         acesso quando alguém esquecer a senha. A redefinição volta a senha para{" "}
-        <strong>{PLATFORM_RESET_PASSWORD}</strong>.
+        <strong>{PLATFORM_RESET_PASSWORD}</strong>. Se precisar remover alguém,
+        a exclusão também pode ser feita por aqui.
       </Typography>
 
       <DataTable
@@ -177,6 +206,14 @@ export function AdminUserManagementTable({
                     onClick={() => handlePasswordReset(workspaceUser.id)}
                   >
                     Resetar senha
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    disabled={userPending || workspaceUser.id === currentUserId}
+                    onClick={() => handleDeleteUser(workspaceUser.id, workspaceUser.name)}
+                  >
+                    Excluir
                   </Button>
                 </Stack>
               </TableCell>

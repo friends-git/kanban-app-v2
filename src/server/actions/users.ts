@@ -39,6 +39,10 @@ const resetUserPasswordSchema = z.object({
   userId: z.string().min(1),
 });
 
+const deleteUserSchema = z.object({
+  userId: z.string().min(1),
+});
+
 const createUserSchema = z.object({
   firstName: z.string().trim().min(2, "Informe o nome."),
   lastName: z.string().trim().min(2, "Informe o sobrenome."),
@@ -399,6 +403,117 @@ export async function resetUserPasswordAction(
   return {
     ok: true,
     message: `Senha de ${targetUser.name} redefinida para ${PLATFORM_RESET_PASSWORD}.`,
+  };
+}
+
+export async function deleteUserAction(
+  input: z.input<typeof deleteUserSchema>,
+): Promise<UserActionResult> {
+  const user = await requireUser();
+
+  if (!canAccessAdmin(user)) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para excluir usuários.",
+    };
+  }
+
+  const parsed = deleteUserSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Usuário inválido para exclusão.",
+    };
+  }
+
+  if (parsed.data.userId === user.id) {
+    return {
+      ok: false,
+      error: "Não é possível excluir o próprio usuário enquanto você está logado.",
+    };
+  }
+
+  const targetUser = await db.user.findUnique({
+    where: {
+      id: parsed.data.userId,
+    },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      active: true,
+      _count: {
+        select: {
+          ownedProjects: true,
+          createdTasks: true,
+        },
+      },
+    },
+  });
+
+  if (!targetUser) {
+    return {
+      ok: false,
+      error: "Usuário não encontrado.",
+    };
+  }
+
+  if (targetUser.role === GlobalRole.ADMIN) {
+    const activeAdminCount = await db.user.count({
+      where: {
+        role: GlobalRole.ADMIN,
+        active: true,
+      },
+    });
+
+    if (activeAdminCount <= 1) {
+      return {
+        ok: false,
+        error: "Mantenha pelo menos um admin ativo no workspace.",
+      };
+    }
+  }
+
+  await db.$transaction(async (transaction) => {
+    await transaction.project.updateMany({
+      where: {
+        ownerId: targetUser.id,
+      },
+      data: {
+        ownerId: user.id,
+      },
+    });
+
+    await transaction.task.updateMany({
+      where: {
+        creatorId: targetUser.id,
+      },
+      data: {
+        creatorId: user.id,
+      },
+    });
+
+    await transaction.user.delete({
+      where: {
+        id: targetUser.id,
+      },
+    });
+  });
+
+  revalidatePath("/projects");
+  revalidatePath("/tasks");
+  revalidatePath("/teams");
+  revalidateUserViews();
+
+  const transferSummary =
+    targetUser._count.ownedProjects || targetUser._count.createdTasks
+      ? " Projetos e tarefas de autoria foram transferidos para o admin responsável."
+      : "";
+
+  return {
+    ok: true,
+    message: `${targetUser.name} foi removido do workspace.${transferSummary}`,
   };
 }
 

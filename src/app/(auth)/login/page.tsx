@@ -27,6 +27,7 @@ const errorMessages: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const user = await getCurrentUser();
+  const showDevelopmentAccessPanel = process.env.NODE_ENV !== "production";
 
   if (user) {
     redirect("/dashboard");
@@ -51,10 +52,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <Box
         sx={{
           width: "100%",
-          maxWidth: 1120,
+          maxWidth: showDevelopmentAccessPanel ? 1120 : 760,
           display: "grid",
           gap: 3,
-          gridTemplateColumns: { xs: "1fr", lg: "1.05fr 0.95fr" },
+          gridTemplateColumns: {
+            xs: "1fr",
+            lg: showDevelopmentAccessPanel ? "1.05fr 0.95fr" : "minmax(0, 1fr)",
+          },
         }}
       >
         <Paper sx={{ p: { xs: 3, md: 5 } }}>
@@ -86,7 +90,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 <Box>
                   <Typography variant="h3">Entrar no workspace</Typography>
                   <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                    Use um dos acessos disponíveis para acompanhar o trabalho do TCC.
+                    {showDevelopmentAccessPanel
+                      ? "Use um dos acessos disponíveis para acompanhar o trabalho do TCC."
+                      : "Use seu e-mail do grupo e a senha cadastrada pela administração para acessar o workspace."}
                   </Typography>
                 </Box>
 
@@ -98,7 +104,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                       name="email"
                       type="email"
                       label="E-mail"
-                      placeholder="nome@tcc.local"
+                      placeholder="seu.nome@rolezito.com"
                       required
                       fullWidth
                     />
@@ -119,43 +125,45 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </Stack>
         </Paper>
 
-        <Paper sx={{ p: { xs: 3, md: 4 } }}>
-          <Stack spacing={2.5}>
-            <Box>
-              <Typography variant="h3">Acessos do grupo</Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                Senha disponível neste ambiente: <strong>{SEED_DEFAULT_PASSWORD}</strong>
-              </Typography>
-            </Box>
-            <Stack spacing={1.25}>
-              {demoUsers.map((account) => (
-                <Paper
-                  key={account.email}
-                  variant="outlined"
-                  sx={{ p: 1.75, borderRadius: 3 }}
-                >
-                  <Stack spacing={0.5}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      spacing={2}
-                      alignItems="center"
-                    >
-                      <Typography fontWeight={700}>{account.name}</Typography>
-                      <Chip label={roleLabels[account.role]} size="small" />
+        {showDevelopmentAccessPanel ? (
+          <Paper sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack spacing={2.5}>
+              <Box>
+                <Typography variant="h3">Acessos do grupo</Typography>
+                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+                  Senha disponível neste ambiente: <strong>{SEED_DEFAULT_PASSWORD}</strong>
+                </Typography>
+              </Box>
+              <Stack spacing={1.25}>
+                {demoUsers.map((account) => (
+                  <Paper
+                    key={account.email}
+                    variant="outlined"
+                    sx={{ p: 1.75, borderRadius: 3 }}
+                  >
+                    <Stack spacing={0.5}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        spacing={2}
+                        alignItems="center"
+                      >
+                        <Typography fontWeight={700}>{account.name}</Typography>
+                        <Chip label={roleLabels[account.role]} size="small" />
+                      </Stack>
+                      <Typography color="text.secondary" variant="body2">
+                        {account.email}
+                      </Typography>
+                      <Typography color="text.secondary" variant="body2">
+                        {account.title}
+                      </Typography>
                     </Stack>
-                    <Typography color="text.secondary" variant="body2">
-                      {account.email}
-                    </Typography>
-                    <Typography color="text.secondary" variant="body2">
-                      {account.title}
-                    </Typography>
-                  </Stack>
-                </Paper>
-              ))}
+                  </Paper>
+                ))}
+              </Stack>
             </Stack>
-          </Stack>
-        </Paper>
+          </Paper>
+        ) : null}
       </Box>
     </Box>
   );
