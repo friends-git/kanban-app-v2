@@ -45,6 +45,10 @@ export function canCreateProject(user: Viewer) {
   return isAdmin(user) || user.role === GlobalRole.MEMBER;
 }
 
+export function canCreateTeam(user: Viewer) {
+  return isAdmin(user) || user.role === GlobalRole.MEMBER;
+}
+
 export function canReadProject(user: Viewer, project: ProjectAccessShape) {
   if (isAdmin(user)) {
     return true;

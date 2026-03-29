@@ -1,4 +1,5 @@
 import { Box, Stack, Typography } from "@mui/material";
+import { TeamQuickCreateDialog } from "@/components/teams/team-quick-create-dialog";
 import { AvatarStack } from "@/components/ui/avatar-stack";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EntityCard } from "@/components/ui/entity-card";
@@ -6,11 +7,17 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TagChip } from "@/components/ui/tag-chip";
 import { requireUser } from "@/server/auth/session";
+import { canCreateTeam } from "@/server/permissions";
+import { listTeamFormOptions } from "@/server/services/reference-data";
 import { listVisibleTeams } from "@/server/services/workspace";
 
 export default async function TeamsPage() {
   const user = await requireUser();
-  const teams = await listVisibleTeams(user);
+  const allowCreateTeam = canCreateTeam(user);
+  const [teams, teamFormOptions] = await Promise.all([
+    listVisibleTeams(user),
+    allowCreateTeam ? listTeamFormOptions() : Promise.resolve(null),
+  ]);
   const myTeams = teams.filter((team) =>
     team.members.some((member) => member.userId === user.id),
   );
@@ -22,6 +29,18 @@ export default async function TeamsPage() {
         title="Equipes e responsáveis"
         description="Veja quem participa de cada frente do TCC e como o grupo está organizado."
         chips={[`${myTeams.length} equipes com você`, `${teams.length} equipes visíveis`]}
+        actions={
+          allowCreateTeam && teamFormOptions ? (
+            <TeamQuickCreateDialog
+              currentUserId={user.id}
+              currentUserName={user.name}
+              users={teamFormOptions.users.map((member) => ({
+                id: member.id,
+                name: member.name,
+              }))}
+            />
+          ) : null
+        }
       />
 
       {myTeams.length ? (
@@ -104,7 +123,14 @@ export default async function TeamsPage() {
           ))}
         </Box>
       ) : (
-        <EmptyState message="Nenhuma equipe disponível para você no momento." />
+        <EmptyState
+          title="Nenhuma equipe cadastrada ainda"
+          message={
+            allowCreateTeam
+              ? "Use o botão de nova equipe para começar a organizar as frentes do projeto."
+              : "Nenhuma equipe disponível para você no momento."
+          }
+        />
       )}
     </Stack>
   );

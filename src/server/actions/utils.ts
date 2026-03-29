@@ -31,7 +31,7 @@ export function toOptionalDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function slugify(value: string) {
+function slugify(value: string, fallback: string) {
   const slug = value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -39,14 +39,14 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  return slug || "projeto";
+  return slug || fallback;
 }
 
 export async function createUniqueProjectSlug(
   name: string,
   excludeProjectId?: string,
 ) {
-  const baseSlug = slugify(name);
+  const baseSlug = slugify(name, "projeto");
   const existingProjects = await db.project.findMany({
     where: excludeProjectId
       ? {
@@ -72,6 +72,42 @@ export async function createUniqueProjectSlug(
   }
 
   const occupiedSlugs = new Set(existingProjects.map((project) => project.slug));
+  let suffix = 2;
+
+  while (occupiedSlugs.has(`${baseSlug}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseSlug}-${suffix}`;
+}
+
+export async function createUniqueTeamSlug(name: string, excludeTeamId?: string) {
+  const baseSlug = slugify(name, "equipe");
+  const existingTeams = await db.team.findMany({
+    where: excludeTeamId
+      ? {
+          slug: {
+            startsWith: baseSlug,
+          },
+          NOT: {
+            id: excludeTeamId,
+          },
+        }
+      : {
+          slug: {
+            startsWith: baseSlug,
+          },
+        },
+    select: {
+      slug: true,
+    },
+  });
+
+  if (!existingTeams.some((team) => team.slug === baseSlug)) {
+    return baseSlug;
+  }
+
+  const occupiedSlugs = new Set(existingTeams.map((team) => team.slug));
   let suffix = 2;
 
   while (occupiedSlugs.has(`${baseSlug}-${suffix}`)) {

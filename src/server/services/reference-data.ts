@@ -44,6 +44,27 @@ export async function listProjectFormOptions() {
   };
 }
 
+export async function listTeamFormOptions() {
+  const users = await db.user.findMany({
+    where: {
+      active: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      avatarColor: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return {
+    users,
+  };
+}
+
 export async function listTaskFormOptions(user: Viewer) {
   const [users, projects] = await Promise.all([
     db.user.findMany({
