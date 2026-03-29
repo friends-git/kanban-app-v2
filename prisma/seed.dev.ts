@@ -86,8 +86,8 @@ const teamSpecs = [
 
 const projectSpecs = [
   {
-    name: "Workspace TCC",
-    slug: "workspace-tcc",
+    name: "Kanban - Rolêzito",
+    slug: "kanban-rolezito",
     summary: "Produto principal que consolida projetos, tarefas, equipes e calendário.",
     description:
       "Projeto central do MVP. Reúne a shell do app, regras de acesso e visão operacional do grupo.",

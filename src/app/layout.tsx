@@ -3,7 +3,7 @@ import { AppProviders } from "@/components/providers/app-providers";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Workspace TCC",
+  title: "Kanban - Rolêzito",
   description: "Workspace para acompanhar projetos, tarefas, sprints e prazos do TCC",
 };
 
