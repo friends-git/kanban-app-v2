@@ -1,4 +1,6 @@
 import {
+  FlowchartScopeType,
+  FlowchartType,
   PrismaClient,
   ProjectRole,
   ProjectStatus,
@@ -10,6 +12,7 @@ import {
 } from "@prisma/client";
 import { addDays, subDays } from "date-fns";
 import { demoUsers, SEED_DEFAULT_PASSWORD } from "../src/lib/demo-users";
+import { type FlowchartContent } from "../src/lib/flowcharts";
 import { hashPassword } from "../src/server/auth/password";
 
 const prisma = new PrismaClient();
@@ -44,6 +47,7 @@ type TaskSeedSpec = {
     type: string;
     description: string;
   }>;
+  dependencyCodes?: string[];
 };
 
 const teamSpecs = [
@@ -170,7 +174,7 @@ const projectSpecs = [
 
 const sprintSpecs = [
   {
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     name: "Sprint Fundação do MVP",
     goal: "Consolidar arquitetura, autenticação e base de dados.",
     status: SprintStatus.COMPLETED,
@@ -178,7 +182,7 @@ const sprintSpecs = [
     endOffsetDays: -11,
   },
   {
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     name: "Sprint Estrutura Inicial",
     goal: "Subir shell do produto, páginas base e seed demonstrável.",
     status: SprintStatus.ACTIVE,
@@ -223,7 +227,7 @@ const boardColumns = [
 const taskSpecs: TaskSeedSpec[] = [
   {
     code: "TCC-001",
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     sprintName: "Sprint Fundação do MVP",
     creatorEmail: "leonardo@tcc.local",
     title: "Definir arquitetura simplificada do MVP",
@@ -265,7 +269,7 @@ const taskSpecs: TaskSeedSpec[] = [
   },
   {
     code: "TCC-002",
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     sprintName: "Sprint Estrutura Inicial",
     creatorEmail: "leonardo@tcc.local",
     title: "Modelar schema Prisma sem multi-tenant",
@@ -303,10 +307,11 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Moveu a tarefa para em andamento durante a sprint atual.",
       },
     ],
+    dependencyCodes: ["TCC-001"],
   },
   {
     code: "TCC-003",
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     sprintName: "Sprint Estrutura Inicial",
     creatorEmail: "marina@tcc.local",
     title: "Montar shell inicial do dashboard",
@@ -344,10 +349,11 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Enviou a shell para revisão após fechar a navegação base.",
       },
     ],
+    dependencyCodes: ["TCC-002"],
   },
   {
     code: "TCC-004",
-    projectSlug: "workspace-tcc",
+    projectSlug: "kanban-rolezito",
     sprintName: "Sprint Estrutura Inicial",
     creatorEmail: "fernanda@tcc.local",
     title: "Configurar seed com dados reais do grupo",
@@ -380,6 +386,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Criou a tarefa para garantir um seed rico para a apresentação.",
       },
     ],
+    dependencyCodes: ["TCC-002"],
   },
   {
     code: "TCC-005",
@@ -421,6 +428,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Iniciou a construção do painel de métricas.",
       },
     ],
+    dependencyCodes: ["TCC-004"],
   },
   {
     code: "TCC-006",
@@ -456,6 +464,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Criou a tarefa após feedback da orientadora sobre o painel.",
       },
     ],
+    dependencyCodes: ["TCC-005"],
   },
   {
     code: "TCC-007",
@@ -492,6 +501,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Abriu a frente de calendário para integrar datas críticas.",
       },
     ],
+    dependencyCodes: ["TCC-004"],
   },
   {
     code: "TCC-008",
@@ -522,6 +532,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Criou a ideia de UI para a futura visão mensal.",
       },
     ],
+    dependencyCodes: ["TCC-007"],
   },
   {
     code: "TCC-009",
@@ -557,6 +568,7 @@ const taskSpecs: TaskSeedSpec[] = [
         description: "Criou uma checklist restrita para a preparação da defesa.",
       },
     ],
+    dependencyCodes: ["TCC-010"],
   },
   {
     code: "TCC-010",
@@ -600,11 +612,145 @@ const taskSpecs: TaskSeedSpec[] = [
   },
 ];
 
+const projectFlowchartSpecs: Array<{
+  projectSlug: string;
+  creatorEmail: string;
+  name: string;
+  description: string;
+  content: FlowchartContent;
+}> = [
+  {
+    projectSlug: "kanban-rolezito",
+    creatorEmail: "marina@tcc.local",
+    name: "Fluxo de entrega do MVP",
+    description: "Visão manual do caminho entre arquitetura, implementação, revisão e seed de demonstração.",
+    content: {
+      nodes: [
+        {
+          id: "node-mvp-brief",
+          position: { x: 80, y: 120 },
+          data: { label: "Arquitetura simplificada" },
+        },
+        {
+          id: "node-mvp-build",
+          position: { x: 360, y: 120 },
+          data: { label: "Implementação full-stack" },
+        },
+        {
+          id: "node-mvp-review",
+          position: { x: 640, y: 120 },
+          data: { label: "Revisão visual e permissões" },
+        },
+        {
+          id: "node-mvp-seed",
+          position: { x: 920, y: 120 },
+          data: { label: "Seed demonstrável para a banca" },
+        },
+      ],
+      edges: [
+        { id: "edge-mvp-1", source: "node-mvp-brief", target: "node-mvp-build" },
+        { id: "edge-mvp-2", source: "node-mvp-build", target: "node-mvp-review" },
+        { id: "edge-mvp-3", source: "node-mvp-review", target: "node-mvp-seed" },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.88 },
+    },
+  },
+  {
+    projectSlug: "painel-entregas",
+    creatorEmail: "gabriel@tcc.local",
+    name: "Leitura executiva da orientadora",
+    description: "Diagrama manual para explicar como os dados chegam à visão gerencial do painel.",
+    content: {
+      nodes: [
+        {
+          id: "node-metricas-tarefas",
+          position: { x: 100, y: 100 },
+          data: { label: "Tarefas e sprints" },
+        },
+        {
+          id: "node-metricas-agregacao",
+          position: { x: 390, y: 100 },
+          data: { label: "Agregação de indicadores" },
+        },
+        {
+          id: "node-metricas-cards",
+          position: { x: 680, y: 60 },
+          data: { label: "Cards de progresso" },
+        },
+        {
+          id: "node-metricas-alertas",
+          position: { x: 680, y: 180 },
+          data: { label: "Alertas e gargalos" },
+        },
+      ],
+      edges: [
+        {
+          id: "edge-metricas-1",
+          source: "node-metricas-tarefas",
+          target: "node-metricas-agregacao",
+        },
+        {
+          id: "edge-metricas-2",
+          source: "node-metricas-agregacao",
+          target: "node-metricas-cards",
+        },
+        {
+          id: "edge-metricas-3",
+          source: "node-metricas-agregacao",
+          target: "node-metricas-alertas",
+        },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.9 },
+    },
+  },
+];
+
+const taskFlowchartSpecs: Array<{
+  taskCode: string;
+  creatorEmail: string;
+  name: string;
+  description: string;
+  content: FlowchartContent;
+}> = [
+  {
+    taskCode: "TCC-002",
+    creatorEmail: "caio@tcc.local",
+    name: "Diagrama · TCC-002",
+    description: "Recorte manual da modelagem do schema Prisma para a frente técnica.",
+    content: {
+      nodes: [
+        {
+          id: "node-schema-enums",
+          position: { x: 100, y: 120 },
+          data: { label: "Enums de role e visibilidade" },
+        },
+        {
+          id: "node-schema-models",
+          position: { x: 380, y: 120 },
+          data: { label: "Modelos principais do domínio" },
+        },
+        {
+          id: "node-schema-indexes",
+          position: { x: 660, y: 120 },
+          data: { label: "Índices, migração e seed" },
+        },
+      ],
+      edges: [
+        { id: "edge-schema-1", source: "node-schema-enums", target: "node-schema-models" },
+        { id: "edge-schema-2", source: "node-schema-models", target: "node-schema-indexes" },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.92 },
+    },
+  },
+];
+
 async function resetDatabase() {
+  await prisma.flowchart.deleteMany();
   await prisma.taskHistory.deleteMany();
   await prisma.taskComment.deleteMany();
   await prisma.taskChecklistItem.deleteMany();
   await prisma.taskAssignee.deleteMany();
+  await prisma.taskDependency.deleteMany();
   await prisma.taskTag.deleteMany();
   await prisma.task.deleteMany();
   await prisma.boardColumn.deleteMany();
@@ -752,12 +898,14 @@ export async function main() {
     tags.set(tag.name, createdTag.id);
   }
 
+  const createdTasks = new Map<string, { id: string; projectSlug: string; title: string }>();
+
   for (const task of taskSpecs) {
     const projectId = projects.get(task.projectSlug)!.id;
     const sprintId = task.sprintName ? sprints.get(task.sprintName)?.id : undefined;
     const boardColumnId = columnsByProject.get(task.projectSlug)?.get(task.status);
 
-    await prisma.task.create({
+    const createdTask = await prisma.task.create({
       data: {
         code: task.code,
         title: task.title,
@@ -815,6 +963,67 @@ export async function main() {
             actorId: users.get(entry.actorEmail)!.id,
           })),
         },
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    createdTasks.set(task.code, {
+      id: createdTask.id,
+      projectSlug: task.projectSlug,
+      title: createdTask.title,
+    });
+  }
+
+  for (const task of taskSpecs) {
+    const currentTask = createdTasks.get(task.code);
+
+    if (!currentTask || !task.dependencyCodes?.length) {
+      continue;
+    }
+
+    for (const dependencyCode of task.dependencyCodes) {
+      const dependencyTask = createdTasks.get(dependencyCode);
+
+      if (!dependencyTask || dependencyTask.projectSlug !== currentTask.projectSlug) {
+        continue;
+      }
+
+      await prisma.taskDependency.create({
+        data: {
+          taskId: currentTask.id,
+          dependsOnTaskId: dependencyTask.id,
+        },
+      });
+    }
+  }
+
+  for (const flowchart of projectFlowchartSpecs) {
+    await prisma.flowchart.create({
+      data: {
+        name: flowchart.name,
+        description: flowchart.description,
+        type: FlowchartType.MANUAL,
+        scopeType: FlowchartScopeType.PROJECT,
+        projectId: projects.get(flowchart.projectSlug)!.id,
+        createdById: users.get(flowchart.creatorEmail)!.id,
+        contentJson: flowchart.content,
+      },
+    });
+  }
+
+  for (const flowchart of taskFlowchartSpecs) {
+    await prisma.flowchart.create({
+      data: {
+        name: flowchart.name,
+        description: flowchart.description,
+        type: FlowchartType.MANUAL,
+        scopeType: FlowchartScopeType.TASK,
+        taskId: createdTasks.get(flowchart.taskCode)!.id,
+        createdById: users.get(flowchart.creatorEmail)!.id,
+        contentJson: flowchart.content,
       },
     });
   }

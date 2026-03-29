@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { ExpandMoreRounded, TuneRounded } from "@mui/icons-material";
 import {
   Alert,
@@ -42,6 +42,11 @@ type TaskQuickCreateDialogProps = {
       id: string;
       name: string;
     }>;
+    tasks: Array<{
+      id: string;
+      code: string;
+      title: string;
+    }>;
   }>;
   users: Array<{
     id: string;
@@ -54,6 +59,7 @@ type TaskCreateFormState = {
   projectId: string;
   sprintId: string;
   assigneeIds: string[];
+  dependencyIds: string[];
   status: TaskStatus;
   priority: TaskPriority;
   type: TaskType;
@@ -77,6 +83,7 @@ export function TaskQuickCreateDialog({
     projectId: projects[0]?.id ?? "",
     sprintId: "",
     assigneeIds: [],
+    dependencyIds: [],
     status: TaskStatus.TODO,
     priority: TaskPriority.MEDIUM,
     type: TaskType.FEATURE,
@@ -89,6 +96,19 @@ export function TaskQuickCreateDialog({
   const currentProject = useMemo(() => {
     return projects.find((project) => project.id === form.projectId) ?? null;
   }, [form.projectId, projects]);
+
+  useEffect(() => {
+    const availableTaskIds = new Set((currentProject?.tasks ?? []).map((task) => task.id));
+
+    if (form.dependencyIds.some((dependencyId) => !availableTaskIds.has(dependencyId))) {
+      setForm((current) => ({
+        ...current,
+        dependencyIds: current.dependencyIds.filter((dependencyId) =>
+          availableTaskIds.has(dependencyId),
+        ),
+      }));
+    }
+  }, [currentProject, form.dependencyIds]);
 
   const handleClose = () => {
     router.replace(cancelHref, { scroll: false });
@@ -103,6 +123,7 @@ export function TaskQuickCreateDialog({
         projectId: form.projectId,
         sprintId: form.sprintId || null,
         assigneeIds: form.assigneeIds,
+        dependencyIds: form.dependencyIds,
         status: form.status,
         priority: form.priority,
         type: form.type,
@@ -187,6 +208,7 @@ export function TaskQuickCreateDialog({
                   ...current,
                   projectId: event.target.value,
                   sprintId: "",
+                  dependencyIds: [],
                 }))
               }
             >
@@ -374,6 +396,41 @@ export function TaskQuickCreateDialog({
                     <MenuItem value="yes">Bloqueada</MenuItem>
                   </TextField>
                 </Box>
+
+                <TextField
+                  size="small"
+                  label="Dependências"
+                  select
+                  SelectProps={{
+                    multiple: true,
+                    renderValue: (selected) =>
+                      (selected as string[])
+                        .map((taskId) => {
+                          const dependency = (currentProject?.tasks ?? []).find(
+                            (task) => task.id === taskId,
+                          );
+
+                          return dependency
+                            ? `${dependency.code} · ${dependency.title}`
+                            : "Tarefa";
+                        })
+                        .join(", "),
+                  }}
+                  value={form.dependencyIds}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      dependencyIds: event.target.value as unknown as string[],
+                    }))
+                  }
+                >
+                  {(currentProject?.tasks ?? []).map((task) => (
+                    <MenuItem key={task.id} value={task.id}>
+                      <Checkbox checked={form.dependencyIds.includes(task.id)} />
+                      <ListItemText primary={task.title} secondary={task.code} />
+                    </MenuItem>
+                  ))}
+                </TextField>
 
                 <TextField
                   label="Descrição"

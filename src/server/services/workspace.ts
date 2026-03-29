@@ -95,6 +95,36 @@ const taskInclude = Prisma.validator<Prisma.TaskInclude>()({
       createdAt: "desc",
     },
   },
+  dependencies: {
+    select: {
+      id: true,
+      dependsOnTaskId: true,
+      dependsOnTask: {
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          status: true,
+        },
+      },
+    },
+  },
+  flowcharts: {
+    where: {
+      isArchived: false,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      type: true,
+      scopeType: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  },
 });
 
 const sprintInclude = Prisma.validator<Prisma.SprintInclude>()({
@@ -204,6 +234,25 @@ const projectDetailInclude = Prisma.validator<Prisma.ProjectInclude>()({
         dueDate: "asc",
       },
     ],
+  },
+  flowcharts: {
+    where: {
+      isArchived: false,
+      type: "MANUAL",
+      scopeType: "PROJECT",
+    },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          avatarColor: true,
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
   },
   board: {
     include: {

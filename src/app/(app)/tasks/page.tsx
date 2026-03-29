@@ -149,6 +149,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                 id: sprint.id,
                 name: sprint.name,
               })),
+              tasks: project.tasks.map((task) => ({
+                id: task.id,
+                code: task.code,
+                title: task.title,
+              })),
             }))}
             users={taskFormOptions.users}
           />
@@ -169,6 +174,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           sprints: project.sprints.map((sprint) => ({
             id: sprint.id,
             name: sprint.name,
+          })),
+          tasks: project.tasks.map((task) => ({
+            id: task.id,
+            code: task.code,
+            title: task.title,
           })),
         }))}
         users={taskFormOptions.users}
@@ -459,6 +469,10 @@ function toTaskDndListItem(
 function mapTaskToDrawerTask(
   task: Awaited<ReturnType<typeof listVisibleTasks>>[number],
 ) {
+  const taskFlowchart = task.flowcharts.find(
+    (flowchart) => flowchart.type === "MANUAL" && flowchart.scopeType === "TASK",
+  );
+
   return {
     id: task.id,
     code: task.code,
@@ -501,6 +515,19 @@ function mapTaskToDrawerTask(
       name: tagItem.tag.name,
       color: tagItem.tag.color,
     })),
+    dependencies: task.dependencies.map((dependency) => ({
+      id: dependency.dependsOnTask.id,
+      code: dependency.dependsOnTask.code,
+      title: dependency.dependsOnTask.title,
+      status: dependency.dependsOnTask.status,
+    })),
+    flowchart: taskFlowchart
+      ? {
+          id: taskFlowchart.id,
+          name: taskFlowchart.name,
+          updatedAt: taskFlowchart.updatedAt.toISOString(),
+        }
+      : null,
   };
 }
 

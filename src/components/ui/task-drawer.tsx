@@ -16,6 +16,11 @@ type TaskDrawerProps = {
       id: string;
       name: string;
     }>;
+    tasks: Array<{
+      id: string;
+      code: string;
+      title: string;
+    }>;
   }>;
   users: Array<{
     id: string;
