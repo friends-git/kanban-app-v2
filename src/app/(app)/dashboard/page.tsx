@@ -17,19 +17,19 @@ export default async function DashboardPage() {
   const data = await getDashboardData(user);
 
   const roleCopy = {
-    ADMIN: "Visão completa do workspace com leitura operacional e administrativa.",
-    MEMBER: "Visão operacional para executar e acompanhar o TCC no ritmo da sprint.",
-    COLLABORATOR: "Visão enxuta focada apenas nos projetos e tarefas em que você participa.",
-    ADVISOR: "Visão de acompanhamento com foco em andamento, marcos e leitura gerencial.",
+    ADMIN: "Acompanhe o andamento do grupo, a distribuição do trabalho e os pontos que precisam de atenção.",
+    MEMBER: "Veja o que está em andamento, suas responsabilidades e os próximos prazos do TCC.",
+    COLLABORATOR: "Acesse as frentes em que você participa e acompanhe o que precisa ser entregue.",
+    ADVISOR: "Acompanhe a evolução do trabalho, os marcos ativos e os próximos prazos do grupo.",
   }[user.role];
 
   return (
     <Stack spacing={3}>
       <PageHeader
-        eyebrow="Home"
+        eyebrow="Painel"
         title={`Olá, ${user.name.split(" ")[0]}`}
         description={roleCopy}
-        chips={["Workspace home", "Resumo por role", "Leitura do dia"]}
+        chips={["Panorama do grupo", "Progresso do trabalho", "Leitura do dia"]}
       />
 
       <Box
@@ -43,12 +43,12 @@ export default async function DashboardPage() {
         }}
       >
         <EntityCard
-          eyebrow="Hoje no workspace"
-          title="Visão rápida do contexto"
-          description="Uma leitura imediata do ritmo atual do TCC, sem ruído de painel corporativo."
+          eyebrow="Hoje"
+          title="Panorama do trabalho"
+          description="Um resumo rápido do que está em andamento no TCC neste momento."
           actions={
             <Button component={Link} href="/tasks?view=current" variant="contained" size="small">
-              Abrir sprint atual
+              Ver sprint atual
             </Button>
           }
         >
@@ -63,9 +63,9 @@ export default async function DashboardPage() {
             }}
           >
             <MetricBlock label="Projetos" value={data.stats.visibleProjects} />
-            <MetricBlock label="Abertas" value={data.stats.openTasks} />
-            <MetricBlock label="Sprints" value={data.stats.activeSprints} />
-            <MetricBlock label="Minhas" value={data.stats.myTasks} />
+            <MetricBlock label="Em aberto" value={data.stats.openTasks} />
+            <MetricBlock label="Sprints ativas" value={data.stats.activeSprints} />
+            <MetricBlock label="Minhas entregas" value={data.stats.myTasks} />
           </Box>
         </EntityCard>
 
@@ -79,10 +79,10 @@ export default async function DashboardPage() {
             },
           }}
         >
-          <KpiCard label="Projetos visíveis" value={data.stats.visibleProjects} helper="Escopo filtrado pelo seu papel." tone="violet" />
-          <KpiCard label="Tarefas abertas" value={data.stats.openTasks} helper="Itens ainda em execução no workspace." tone="gold" />
-          <KpiCard label="Sprints ativas" value={data.stats.activeSprints} helper="Frentes vivas neste momento." tone="neutral" />
-          <KpiCard label="Minhas tarefas" value={data.stats.myTasks} helper="Responsabilidades atribuídas a você." tone="violet" />
+          <KpiCard label="Projetos visíveis" value={data.stats.visibleProjects} helper="Frentes que você pode acompanhar nesta visão." tone="violet" />
+          <KpiCard label="Tarefas em aberto" value={data.stats.openTasks} helper="Itens que ainda precisam avançar." tone="gold" />
+          <KpiCard label="Sprints ativas" value={data.stats.activeSprints} helper="Ciclos em execução agora." tone="neutral" />
+          <KpiCard label="Minhas tarefas" value={data.stats.myTasks} helper="Responsabilidades que estão com você." tone="violet" />
         </Box>
       </Box>
 
@@ -95,16 +95,16 @@ export default async function DashboardPage() {
       >
         <EntityCard
           eyebrow="Resumo"
-          title="Distribuição de tarefas"
-          description="Leitura rápida de como o trabalho está distribuído entre backlog, execução, revisão e entrega."
+          title="Andamento das tarefas"
+          description="Veja como o trabalho está distribuído entre planejamento, execução, revisão e conclusão."
         >
           <TaskStatusChart data={data.statusBreakdown} />
         </EntityCard>
 
         <EntityCard
           eyebrow="Prazos"
-          title="Próximos movimentos"
-          description="Itens mais sensíveis desta visão."
+          title="Próximos prazos"
+          description="Entregas e tarefas que merecem atenção agora."
         >
           {data.upcoming.length ? (
             <Stack spacing={1.25}>
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
               ))}
             </Stack>
           ) : (
-            <EmptyState message="Nenhum prazo visível no momento." />
+            <EmptyState message="Nenhum prazo próximo para acompanhar agora." />
           )}
         </EntityCard>
       </Box>
@@ -147,7 +147,7 @@ export default async function DashboardPage() {
         <EntityCard
           eyebrow="Foco"
           title={user.role === "ADVISOR" ? "Itens observados" : "Minhas tarefas"}
-          description="Amostra rápida da fila mais relevante para você agora."
+          description="As tarefas mais relevantes para você neste momento."
         >
           {data.myTasks.length ? (
             <Stack spacing={1.25}>
@@ -156,14 +156,14 @@ export default async function DashboardPage() {
               ))}
             </Stack>
           ) : (
-            <EmptyState message="Você ainda não tem tarefas atribuídas." />
+            <EmptyState message="Nenhuma tarefa atribuída a você no momento." />
           )}
         </EntityCard>
 
         <EntityCard
-          eyebrow="Leitura gerencial"
-          title="Panorama do workspace"
-          description="Composição do que está visível para você entre projetos, sprints, tarefas e prazos imediatos."
+          eyebrow="Visão geral"
+          title="Panorama do trabalho"
+          description="Resumo do que está em andamento entre projetos, sprints, tarefas e prazos."
         >
           <RoleDistributionChart
             data={[

@@ -761,7 +761,7 @@ export function TaskDetailContent({
             <Stack direction="row" spacing={1}>
               <TextField
                 fullWidth
-                placeholder="Adicionar item"
+                placeholder="Adicionar etapa do checklist"
                 value={newChecklistItem}
                 onChange={(event) => setNewChecklistItem(event.target.value)}
                 sx={{
@@ -844,7 +844,7 @@ export function TaskDetailContent({
                 fullWidth
                 multiline
                 minRows={3}
-                placeholder="Adicionar comentário"
+                placeholder="Registrar comentário ou atualização"
                 value={newComment}
                 onChange={(event) => setNewComment(event.target.value)}
                 sx={{

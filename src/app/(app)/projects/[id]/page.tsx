@@ -123,7 +123,7 @@ export default async function ProjectDetailPage({
           title={project.name}
           description={project.description ?? project.summary}
           chips={[
-            project.team?.name ?? "Workspace",
+            project.team?.name ?? "Grupo do TCC",
             `${project.tasks.length} tarefas`,
             `${project.sprints.length} sprints`,
           ]}
@@ -159,18 +159,18 @@ export default async function ProjectDetailPage({
             <EntityCard
               eyebrow="Resumo"
               title="Contexto do projeto"
-              description="Uma página rica para manter intenção, contexto e próximos movimentos do desenvolvimento."
+              description="Objetivo, escopo e contexto desta frente do TCC."
             >
               <Typography color="text.secondary">
                 {project.description ??
-                  "Este projeto ainda não tem uma descrição expandida. A base foi preparada para que o topo da página concentre propriedades, descrição e as tarefas relacionadas sem depender de um modelo enterprise."}
+                  "Adicione um resumo para registrar o objetivo do projeto, o que precisa ser entregue e os próximos passos."}
               </Typography>
             </EntityCard>
 
             <EntityCard
-              eyebrow="Database embutida"
-              title="Tarefas relacionadas"
-              description="A base de execução deste projeto alterna entre quadro e lista sem perder o contexto da página."
+              eyebrow="Execução"
+              title="Tarefas do projeto"
+              description="Acompanhe o andamento das tarefas em quadro ou lista sem sair desta página."
               actions={
                 canCreateTasks ? (
                   <Button
@@ -215,7 +215,7 @@ export default async function ProjectDetailPage({
                     )}
                   />
                 ) : (
-                  <EmptyState message="O quadro deste projeto ainda não foi configurado." />
+                  <EmptyState message="Este projeto ainda não tem colunas de acompanhamento." />
                 )
               ) : project.tasks.length ? (
                 <TaskStatusListDnd
@@ -228,7 +228,7 @@ export default async function ProjectDetailPage({
                   variant="project"
                 />
               ) : (
-                <EmptyState message="Nenhuma tarefa visível neste projeto." />
+                <EmptyState message="Nenhuma tarefa visível neste projeto no momento." />
               )}
             </EntityCard>
           </Stack>
@@ -237,7 +237,7 @@ export default async function ProjectDetailPage({
             <EntityCard
               eyebrow="Equipe"
               title="Pessoas conectadas"
-              description="Participantes e papéis da página do projeto."
+              description="Pessoas envolvidas e papéis desta frente do TCC."
             >
               <AvatarStack
                 max={6}
@@ -263,7 +263,7 @@ export default async function ProjectDetailPage({
                       <Box>
                         <Typography fontWeight={700}>{member.user.name}</Typography>
                         <Typography color="text.secondary" variant="body2">
-                          {member.user.title ?? "Workspace"}
+                          {member.user.title ?? "Grupo do TCC"}
                         </Typography>
                       </Box>
                       <StatusBadge status={member.user.role} />
@@ -276,7 +276,7 @@ export default async function ProjectDetailPage({
             <EntityCard
               eyebrow="Planejamento"
               title="Sprints conectadas"
-              description="Marcos e janelas ativas deste projeto."
+              description="Ciclos e marcos que organizam a execução deste projeto."
             >
               <Stack spacing={1.25}>
                 {project.sprints.map((sprint) => (
@@ -295,7 +295,7 @@ export default async function ProjectDetailPage({
                         <StatusBadge status={sprint.status} />
                       </Stack>
                       <Typography color="text.secondary" variant="body2">
-                        {sprint.goal}
+                        {sprint.goal ?? "Objetivo ainda não definido"}
                       </Typography>
                       <Typography color="text.secondary" variant="caption">
                         {formatFullDate(sprint.startDate)} até {formatFullDate(sprint.endDate)} •{" "}

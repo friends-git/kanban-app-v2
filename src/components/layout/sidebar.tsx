@@ -56,13 +56,13 @@ export function Sidebar({ showAdmin, user }: SidebarProps) {
                 <Box>
                   <Typography variant="h4">Rolezito TCC</Typography>
                   <Typography color="text.secondary" variant="body2">
-                    Workspace único do grupo
+                    Organização do grupo
                   </Typography>
                 </Box>
               </Stack>
               <Typography color="text.secondary" variant="body2">
-                Gestão de projetos, tarefas, sprints, calendário e andamento do TCC
-                em uma interface única e demonstrável.
+                Projetos, tarefas, sprints e prazos do TCC reunidos em um só
+                espaço de trabalho.
               </Typography>
               <Button
                 component={Link}
@@ -87,7 +87,7 @@ export function Sidebar({ showAdmin, user }: SidebarProps) {
             <Box>
               <Typography fontWeight={700}>{user.name}</Typography>
               <Typography color="text.secondary" variant="body2">
-                {roleLabels[user.role]} • {user.title ?? "Workspace"}
+                {roleLabels[user.role]} • {user.title ?? "Grupo do TCC"}
               </Typography>
             </Box>
           </Stack>

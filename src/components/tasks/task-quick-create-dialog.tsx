@@ -146,7 +146,7 @@ export function TaskQuickCreateDialog({
           <Box>
             <Typography variant="h3">Nova tarefa</Typography>
             <Typography color="text.secondary" sx={{ mt: 0.65 }}>
-              Database-first: título, projeto e prazo primeiro. O restante fica recolhido.
+              Comece pelo essencial: título, projeto e prazo. O restante pode ser ajustado depois.
             </Typography>
           </Box>
         </Stack>
@@ -160,7 +160,7 @@ export function TaskQuickCreateDialog({
             autoFocus
             size="small"
             label="Título"
-            placeholder="Ex.: Refinar database global de tarefas"
+            placeholder="Ex.: Revisar capítulo de metodologia"
             value={form.title}
             onChange={(event) =>
               setForm((current) => ({ ...current, title: event.target.value }))
@@ -268,7 +268,7 @@ export function TaskQuickCreateDialog({
               }
               sx={{ px: 0 }}
             >
-              Mais propriedades
+              Mais detalhes
             </Button>
             <Collapse in={showAdvanced} timeout={180}>
               <Stack spacing={1.5} sx={{ mt: 1.5 }}>

@@ -64,29 +64,29 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 variant="overline"
                 sx={{ color: "primary.light", letterSpacing: "0.18em" }}
               >
-                PLATAFORMA TCC
+                WORKSPACE DO TCC
               </Typography>
               <Typography variant="h1" sx={{ mt: 1 }}>
-                Gestão única do grupo, sem multi-tenant
+                Organize o desenvolvimento do TCC em um só lugar
               </Typography>
               <Typography color="text.secondary" sx={{ mt: 2, maxWidth: 560 }}>
-                Base inicial do produto com autenticação simples, Prisma,
-                páginas operacionais e seed demonstrável para a apresentação.
+                Acompanhe projetos, tarefas, sprints e prazos do grupo em um
+                workspace compartilhado para manter o trabalho alinhado.
               </Typography>
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              <Chip label="Next.js full-stack" />
-              <Chip label="Prisma + PostgreSQL" />
-              <Chip label="UI inspirada no Notion" />
+              <Chip label="Projetos do grupo" />
+              <Chip label="Tarefas e sprints" />
+              <Chip label="Prazos e acompanhamento" />
             </Stack>
 
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Stack spacing={2}>
                 <Box>
-                  <Typography variant="h3">Entrar</Typography>
+                  <Typography variant="h3">Entrar no workspace</Typography>
                   <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                    Use qualquer conta do seed para navegar pelas páginas base.
+                    Use um dos acessos disponíveis para acompanhar o trabalho do TCC.
                   </Typography>
                 </Box>
 
@@ -98,7 +98,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                       name="email"
                       type="email"
                       label="E-mail"
-                      placeholder="leonardo@tcc.local"
+                      placeholder="nome@tcc.local"
                       required
                       fullWidth
                     />
@@ -110,7 +110,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                       fullWidth
                     />
                     <Button type="submit" size="large" variant="contained">
-                      Acessar workspace
+                      Entrar
                     </Button>
                   </Stack>
                 </form>
@@ -122,9 +122,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
           <Stack spacing={2.5}>
             <Box>
-              <Typography variant="h3">Contas de demonstração</Typography>
+              <Typography variant="h3">Acessos do grupo</Typography>
               <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                Senha padrão para todos os usuários: <strong>{SEED_DEFAULT_PASSWORD}</strong>
+                Senha disponível neste ambiente: <strong>{SEED_DEFAULT_PASSWORD}</strong>
               </Typography>
             </Box>
             <Stack spacing={1.25}>

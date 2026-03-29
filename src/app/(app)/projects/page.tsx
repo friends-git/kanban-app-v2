@@ -62,9 +62,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     <Stack spacing={3}>
       <PageHeader
         eyebrow="Projetos"
-        title="Base de projetos do workspace"
-        description="Uma database viva para acompanhar frentes do TCC por status, quadro, cronograma ou leitura completa, com a leveza de página rica e múltiplas views."
-        chips={["Múltiplas views", "Agrupamento por status", "Workspace único"]}
+        title="Projetos do TCC"
+        description="Acompanhe as frentes do trabalho, responsáveis e prazos em quadro, cronograma ou lista."
+        chips={["Quadro e lista", "Prazos do grupo", "Acompanhamento por status"]}
         actions={
           canCreate ? (
             <Button
@@ -90,7 +90,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         />
       ) : null}
 
-      {projects.length ? renderProjectsView(currentView, projects) : <EmptyState message="Nenhum projeto disponível para este usuário." />}
+      {projects.length ? renderProjectsView(currentView, projects) : <EmptyState message="Nenhum projeto disponível para você no momento." />}
     </Stack>
   );
 }
@@ -105,7 +105,7 @@ function renderProjectsView(
         {projects.map((project) => (
           <EntityCard
             key={project.id}
-            eyebrow={project.team?.name ?? "Workspace"}
+            eyebrow={project.team?.name ?? "Grupo do TCC"}
             title={project.name}
             description={project.summary}
             actions={<StatusBadge status={project.status} />}
@@ -147,9 +147,9 @@ function renderProjectsView(
     return (
       <Stack spacing={1.5}>
         <SectionHeading
-          eyebrow="View completa"
+          eyebrow="Todos"
           title="Todos os projetos"
-          meta={`${projects.length} itens nesta database`}
+          meta={`${projects.length} projetos para acompanhar neste momento`}
         />
         <DataTable columns={["Projeto", "Equipe", "Status", "Prazo", "Tarefas"]}>
           {projects.map((project) => (
@@ -178,9 +178,9 @@ function renderProjectsView(
   return (
     <Stack spacing={1.5}>
       <SectionHeading
-        eyebrow="View principal"
+        eyebrow="Em andamento"
         title="Projetos ativos"
-        meta={`${activeProjectsCount(projects)} projetos em andamento, com grupos completos para mover entre status.`}
+        meta={`${activeProjectsCount(projects)} projetos em andamento para acompanhar e atualizar.`}
       />
       <ProjectStatusListDnd projects={projects.map(toProjectDndItem)} />
     </Stack>

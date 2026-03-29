@@ -45,8 +45,8 @@ export default async function CalendarPage() {
     <Stack spacing={3}>
       <PageHeader
         eyebrow="Calendário"
-        title="Agenda do workspace"
-        description="Visão mensal e compacta para tarefas com prazo e marcos de sprint, sem excesso de informação."
+        title="Calendário do TCC"
+        description="Visualize prazos de tarefas e marcos das sprints em uma agenda mensal."
       />
 
       <Box
@@ -59,7 +59,7 @@ export default async function CalendarPage() {
         <EntityCard
           eyebrow="Mensal"
           title={format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
-          description="Eventos visíveis pelo seu papel atual."
+          description="Datas e entregas visíveis para o seu perfil."
         >
           <Box
             sx={{
@@ -120,22 +120,26 @@ export default async function CalendarPage() {
 
         <EntityCard
           eyebrow="Próximos"
-          title="Agenda imediata"
-          description="Resumo compacto do que vence a seguir."
+          title="Próximos prazos"
+          description="O que precisa de atenção primeiro."
         >
-          <List sx={{ p: 0 }}>
-            {upcoming.map((event, index) => (
-              <Box key={event.id}>
-                <ListItem sx={{ px: 0, py: 1.25 }}>
-                  <ListItemText
-                    primary={event.title}
-                    secondary={`${event.projectName} • ${event.meta} • ${format(event.date, "dd/MM", { locale: ptBR })}`}
-                  />
-                </ListItem>
-                {index < upcoming.length - 1 ? <Divider /> : null}
-              </Box>
-            ))}
-          </List>
+          {upcoming.length ? (
+            <List sx={{ p: 0 }}>
+              {upcoming.map((event, index) => (
+                <Box key={event.id}>
+                  <ListItem sx={{ px: 0, py: 1.25 }}>
+                    <ListItemText
+                      primary={event.title}
+                      secondary={`${event.projectName} • ${event.meta} • ${format(event.date, "dd/MM", { locale: ptBR })}`}
+                    />
+                  </ListItem>
+                  {index < upcoming.length - 1 ? <Divider /> : null}
+                </Box>
+              ))}
+            </List>
+          ) : (
+            <Typography color="text.secondary">Nenhum prazo próximo no calendário.</Typography>
+          )}
         </EntityCard>
       </Box>
     </Stack>

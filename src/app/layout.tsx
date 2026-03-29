@@ -4,7 +4,7 @@ import "@/app/globals.css";
 
 export const metadata: Metadata = {
   title: "Workspace TCC",
-  description: "Plataforma única de gestão do TCC",
+  description: "Workspace para acompanhar projetos, tarefas, sprints e prazos do TCC",
 };
 
 type RootLayoutProps = {

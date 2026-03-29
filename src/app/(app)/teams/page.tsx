@@ -19,16 +19,16 @@ export default async function TeamsPage() {
     <Stack spacing={3}>
       <PageHeader
         eyebrow="Equipes"
-        title="Colaboração por frentes"
-        description="Equipes mais leves, menos tabeladas e mais próximas de um workspace colaborativo premium."
-        chips={[`${myTeams.length} equipes minhas`, `${teams.length} equipes visíveis`]}
+        title="Equipes e responsáveis"
+        description="Veja quem participa de cada frente do TCC e como o grupo está organizado."
+        chips={[`${myTeams.length} equipes com você`, `${teams.length} equipes visíveis`]}
       />
 
       {myTeams.length ? (
         <EntityCard
           eyebrow="Minhas equipes"
-          title="Onde você atua"
-          description="Recorte rápido para dar contexto antes da visão completa."
+          title="Equipes em que você atua"
+          description="Um resumo rápido das frentes em que você participa."
         >
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
             {myTeams.map((team) => (
@@ -57,10 +57,10 @@ export default async function TeamsPage() {
               description={team.summary}
             >
               <Stack spacing={1.5}>
-                <TagChip label={team.focus ?? "Foco em definição"} />
+                <TagChip label={team.focus ?? "Foco a definir"} />
                 <Box>
                   <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
-                    Membros
+                    Participantes
                   </Typography>
                   <AvatarStack
                     max={6}
@@ -82,7 +82,7 @@ export default async function TeamsPage() {
                       <Box>
                         <Typography fontWeight={700}>{member.user.name}</Typography>
                         <Typography color="text.secondary" variant="body2">
-                          {member.user.title ?? "Workspace"}
+                          {member.user.title ?? "Grupo do TCC"}
                         </Typography>
                       </Box>
                       <StatusBadge status={member.user.role} />
@@ -91,7 +91,7 @@ export default async function TeamsPage() {
                 </Stack>
                 <Box>
                   <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
-                    Projetos relacionados
+                    Projetos acompanhados
                   </Typography>
                   <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                     {team.projects.map((project) => (
@@ -104,7 +104,7 @@ export default async function TeamsPage() {
           ))}
         </Box>
       ) : (
-        <EmptyState message="Nenhuma equipe visível para este usuário." />
+        <EmptyState message="Nenhuma equipe disponível para você no momento." />
       )}
     </Stack>
   );

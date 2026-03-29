@@ -17,11 +17,11 @@ export default async function AdminPage() {
       <Stack spacing={3}>
         <PageHeader
           eyebrow="Admin"
-          title="Admin simples do workspace"
-          description="Área reservada para administração leve de usuários, equipes e memberships do projeto."
+          title="Gestão do workspace"
+          description="Área reservada para acompanhar usuários, acessos e estrutura do grupo."
         />
         <Alert severity="warning">
-          Seu papel não permite acessar o painel administrativo.
+          Seu perfil não tem acesso à gestão do workspace.
         </Alert>
       </Stack>
     );
@@ -31,8 +31,8 @@ export default async function AdminPage() {
     <Stack spacing={3}>
       <PageHeader
         eyebrow="Admin"
-        title="Admin simples do workspace"
-        description="Gestão do workspace sem virar painel corporativo: usuários, roles, equipes e memberships."
+        title="Gestão do workspace"
+        description="Acompanhe usuários, acessos e vínculos do grupo em um único lugar."
       />
 
       <Box
@@ -46,24 +46,24 @@ export default async function AdminPage() {
           },
         }}
       >
-        <KpiCard label="Usuários" value={data.users.length} helper="Base total do workspace." tone="violet" />
-        <KpiCard label="Sessões ativas" value={data.sessionCount} helper="Acesso em uso no momento." tone="gold" />
-        <KpiCard label="Projetos" value={data.projectCount} helper="Frentes cadastradas." />
-        <KpiCard label="Tarefas" value={data.taskCount} helper="Itens cadastrados na base." />
+        <KpiCard label="Usuários" value={data.users.length} helper="Pessoas com acesso ao workspace." tone="violet" />
+        <KpiCard label="Sessões ativas" value={data.sessionCount} helper="Acessos em uso neste momento." tone="gold" />
+        <KpiCard label="Projetos" value={data.projectCount} helper="Frentes registradas no trabalho." />
+        <KpiCard label="Tarefas" value={data.taskCount} helper="Atividades acompanhadas pelo grupo." />
       </Box>
 
       <EntityCard
         eyebrow="Distribuição"
-        title="Composição do workspace"
-        description="Leitura visual rápida dos papéis globais."
+        title="Distribuição de papéis"
+        description="Veja como os perfis do grupo estão distribuídos no workspace."
       >
         <RoleDistributionChart data={data.roleDistribution} />
       </EntityCard>
 
       <EntityCard
         eyebrow="Usuários"
-        title="Base administrativa"
-        description="Resumo do seed inicial para gestão de papéis e memberships."
+        title="Usuários do workspace"
+        description="Resumo de participantes, papéis e vínculos com equipes e projetos."
       >
         <DataTable columns={["Nome", "Papel", "E-mail", "Projetos", "Equipes", "Tarefas"]}>
           {data.users.map((workspaceUser) => (

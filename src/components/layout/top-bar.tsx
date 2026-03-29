@@ -53,10 +53,10 @@ export function TopBar({ user }: TopBarProps) {
             variant="overline"
             sx={{ color: "secondary.main", letterSpacing: "0.16em" }}
           >
-            ROLEZITO WORKSPACE
+            WORKSPACE DO TCC
           </Typography>
           <Typography variant="h4" sx={{ mt: 0.25 }}>
-            Plataforma do TCC
+            Acompanhamento do TCC
           </Typography>
         </Box>
 

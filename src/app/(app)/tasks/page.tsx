@@ -114,11 +114,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   return (
     <>
       <Stack spacing={3}>
-        <PageHeader
-          eyebrow="Tarefas"
-          title="Database global de tarefas"
-          description="Uma única base com múltiplas views para acompanhar execução por quadro, projeto, sprint e contexto atual, mantendo a task como detalhe contextual lateral."
-          chips={["Database com views", "Drawer contextual", "Checklist central"]}
+      <PageHeader
+        eyebrow="Tarefas"
+        title="Tarefas do TCC"
+        description="Organize o trabalho do grupo por status, projeto, sprint e responsabilidade, com detalhe rápido no painel lateral."
+        chips={["Quadro e listas", "Checklist central", "Acompanhamento por sprint"]}
           actions={
             canCreateAnyTask ? (
               <Button
@@ -157,7 +157,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         {tasks.length ? (
           renderTasksView(currentView, tasks)
         ) : (
-          <EmptyState message="Nenhuma tarefa visível para este usuário." />
+          <EmptyState message="Nenhuma tarefa disponível para você no momento." />
         )}
       </Stack>
 
@@ -187,9 +187,9 @@ function renderTasksView(
     return (
       <Stack spacing={1.5}>
         <ViewLead
-          eyebrow="View"
-          title="Quadro global"
-          meta="Todas as tarefas do workspace distribuídas nas mesmas colunas da database."
+          eyebrow="Quadro"
+          title="Quadro geral das tarefas"
+          meta="Acompanhe o trabalho do grupo distribuído por status."
         />
         <TaskStatusBoardDnd
           tasks={tasks.map((task) => toTaskDndBoardItem(task, `/tasks?view=board&taskId=${task.id}`))}
@@ -205,9 +205,9 @@ function renderTasksView(
     return (
       <Stack spacing={1.5}>
         <ViewLead
-          eyebrow="View"
-          title="Agrupado por projeto"
-          meta="Uma leitura contínua da database por frente de trabalho."
+          eyebrow="Projetos"
+          title="Tarefas por projeto"
+          meta="Veja o que cada frente do TCC está executando."
         />
         <DatabaseSurface>
           <DatabaseListHeader
@@ -277,7 +277,7 @@ function renderTasksView(
     if (!currentSprintTasks.length) {
       return (
         <EmptyState
-          title="Sem tarefas nesta view"
+          title="Nenhuma tarefa na sprint atual"
           message="Nenhuma tarefa vinculada à sprint ativa agora."
         />
       );
@@ -286,9 +286,9 @@ function renderTasksView(
     return (
       <Stack spacing={1.5}>
         <ViewLead
-          eyebrow="View"
-          title="Sprint atual"
-          meta="Quadro focado na janela ativa de execução, distribuindo as tarefas por status."
+          eyebrow="Sprint"
+          title="Sprint em andamento"
+          meta="Foco nas tarefas que estão dentro da sprint ativa."
         />
         <TaskStatusBoardDnd
           tasks={currentSprintTasks.map((task) =>
@@ -339,7 +339,7 @@ function renderTasksView(
     if (!sprintGroups.length) {
       return (
         <EmptyState
-          title="Sem tarefas nesta view"
+          title="Nenhuma sprint com tarefas"
           message="Nenhuma tarefa vinculada a uma sprint no momento."
         />
       );
@@ -348,9 +348,9 @@ function renderTasksView(
     return (
       <Stack spacing={1.5}>
         <ViewLead
-          eyebrow="View"
+          eyebrow="Sprints"
           title="Quadros por sprint"
-          meta="Cada sprint pode ser aberta ou fechada, mantendo um quadro próprio distribuído por status."
+          meta="Abra cada sprint para ver as tarefas distribuídas por status."
         />
         <TaskSprintBoardsDnd
           tasks={tasks
@@ -370,9 +370,9 @@ function renderTasksView(
   return (
     <Stack spacing={1.5}>
       <ViewLead
-        eyebrow="View"
+        eyebrow="Lista"
         title="Todas as tarefas"
-        meta="Uma leitura silenciosa da database completa, agrupada por status."
+        meta="Leitura completa das tarefas, agrupadas por status."
       />
       <TaskStatusListDnd
         tasks={tasks.map((task) => toTaskDndListItem(task, `/tasks?view=list&taskId=${task.id}`))}

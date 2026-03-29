@@ -132,7 +132,7 @@ export function ProjectTaskComposer({
               Nova tarefa
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              A tarefa nasce já no contexto do projeto e pode abrir direto no drawer.
+              Crie uma tarefa já vinculada a este projeto e acompanhe o andamento no painel lateral.
             </Typography>
           </Stack>
 
@@ -171,7 +171,7 @@ export function ProjectTaskComposer({
           autoFocus
           size="small"
           label="Título"
-          placeholder="Ex.: Implementar database de tarefas do projeto"
+          placeholder="Ex.: Ajustar cronograma das entregas"
           value={form.title}
           onChange={(event) =>
             setForm((current) => ({ ...current, title: event.target.value }))
@@ -259,7 +259,7 @@ export function ProjectTaskComposer({
             }
             sx={{ px: 0 }}
           >
-            Mais propriedades
+            Mais detalhes
           </Button>
 
           <Collapse in={showAdvanced} timeout={180}>

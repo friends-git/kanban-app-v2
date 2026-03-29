@@ -14,10 +14,10 @@ export default function NotFound() {
       <Stack spacing={2} sx={{ maxWidth: 420 }}>
         <Typography variant="h2">Página não encontrada</Typography>
         <Typography color="text.secondary">
-          O caminho solicitado não existe neste workspace do TCC.
+          O caminho solicitado não foi encontrado neste workspace do TCC.
         </Typography>
         <Button component={Link} href="/dashboard" variant="contained">
-          Voltar ao dashboard
+          Voltar ao painel
         </Button>
       </Stack>
     </Box>

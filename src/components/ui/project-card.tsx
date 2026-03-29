@@ -59,7 +59,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             noWrap
             sx={{ color: "text.secondary", letterSpacing: "0.08em" }}
           >
-            {project.team?.name ?? "Workspace"}
+            {project.team?.name ?? "Grupo do TCC"}
           </Typography>
           <StatusBadge status={project.status} />
         </Stack>

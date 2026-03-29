@@ -17,15 +17,15 @@ export default async function SprintsPage() {
     <Stack spacing={3}>
       <PageHeader
         eyebrow="Sprints"
-        title="Cadência do MVP"
-        description="Agrupamentos por sprint com a mesma linguagem visual de projetos e dashboard."
+        title="Sprints do TCC"
+        description="Acompanhe os ciclos de trabalho, objetivos e prazos de cada sprint."
       />
 
       {currentSprint ? (
         <EntityCard
           eyebrow="Sprint atual"
           title={currentSprint.name}
-          description={currentSprint.goal ?? "Sem objetivo definido"}
+          description={currentSprint.goal ?? "Objetivo ainda não definido"}
           actions={<StatusBadge status={currentSprint.status} />}
         >
           <Box
@@ -40,7 +40,7 @@ export default async function SprintsPage() {
               label="Período"
               value={`${formatFullDate(currentSprint.startDate)} até ${formatFullDate(currentSprint.endDate)}`}
             />
-            <Metric label="Tarefas" value={`${currentSprint.tasks.length}`} />
+            <Metric label="Tarefas planejadas" value={`${currentSprint.tasks.length}`} />
           </Box>
         </EntityCard>
       ) : null}
@@ -52,7 +52,7 @@ export default async function SprintsPage() {
               key={sprint.id}
               eyebrow={sprint.project.name}
               title={sprint.name}
-              description={sprint.goal ?? "Sem objetivo definido"}
+              description={sprint.goal ?? "Objetivo ainda não definido"}
               actions={<StatusBadge status={sprint.status} />}
             >
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
@@ -64,7 +64,7 @@ export default async function SprintsPage() {
           ))}
         </Stack>
       ) : (
-        <EmptyState message="Nenhuma sprint disponível nesta visão." />
+        <EmptyState message="Nenhuma sprint disponível no momento." />
       )}
     </Stack>
   );

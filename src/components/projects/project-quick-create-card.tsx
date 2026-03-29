@@ -130,7 +130,7 @@ export function ProjectQuickCreateCard({
           <Box>
             <Typography variant="h3">Novo projeto</Typography>
             <Typography color="text.secondary" sx={{ mt: 0.65 }}>
-              O mínimo útil primeiro. As propriedades menos frequentes ficam recolhidas.
+              Comece pelo essencial e detalhe o restante depois.
             </Typography>
           </Box>
         </Stack>
@@ -143,7 +143,7 @@ export function ProjectQuickCreateCard({
           <TextField
             autoFocus
             label="Nome do projeto"
-            placeholder="Ex.: Plataforma web do TCC"
+            placeholder="Ex.: Painel de acompanhamento da pesquisa"
             value={form.name}
             onChange={(event) =>
               setForm((current) => ({ ...current, name: event.target.value }))
@@ -231,7 +231,7 @@ export function ProjectQuickCreateCard({
               }
               sx={{ px: 0 }}
             >
-              Mais propriedades
+              Mais detalhes
             </Button>
             <Collapse in={showAdvanced} timeout={180}>
               <Box

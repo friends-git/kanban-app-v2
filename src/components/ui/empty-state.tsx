@@ -8,7 +8,7 @@ type EmptyStateProps = {
 
 export function EmptyState({
   message,
-  title = "Nada para mostrar por aqui",
+  title = "Nada para exibir nesta visão",
 }: EmptyStateProps) {
   return (
     <Stack
