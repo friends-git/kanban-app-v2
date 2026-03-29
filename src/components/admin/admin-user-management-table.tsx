@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { GlobalRole } from "@prisma/client";
 import {
   Alert,
@@ -57,6 +57,10 @@ export function AdminUserManagementTable({
     Object.fromEntries(users.map((user) => [user.id, user.role])),
   );
 
+  useEffect(() => {
+    setDraftRoles(Object.fromEntries(users.map((user) => [user.id, user.role])));
+  }, [users]);
+
   const currentRoleMap = useMemo(
     () => Object.fromEntries(users.map((user) => [user.id, user.role])),
     [users],
@@ -69,7 +73,7 @@ export function AdminUserManagementTable({
     startTransition(async () => {
       const result = await updateUserRoleAction({
         userId,
-        role: draftRoles[userId],
+        role: draftRoles[userId] ?? currentRoleMap[userId],
       });
 
       if (!result.ok) {
@@ -117,7 +121,8 @@ export function AdminUserManagementTable({
         columns={["Nome", "Contato", "Papel global", "Projetos", "Equipes", "Tarefas", "Ações"]}
       >
         {users.map((workspaceUser) => {
-          const roleChanged = draftRoles[workspaceUser.id] !== currentRoleMap[workspaceUser.id];
+          const selectedRole = draftRoles[workspaceUser.id] ?? currentRoleMap[workspaceUser.id];
+          const roleChanged = selectedRole !== currentRoleMap[workspaceUser.id];
           const userPending = isPending && pendingUserId === workspaceUser.id;
 
           return (
@@ -137,7 +142,7 @@ export function AdminUserManagementTable({
                   select
                   size="small"
                   fullWidth
-                  value={draftRoles[workspaceUser.id]}
+                  value={selectedRole}
                   onChange={(event) =>
                     setDraftRoles((current) => ({
                       ...current,
