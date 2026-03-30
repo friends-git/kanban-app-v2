@@ -12,7 +12,11 @@ import {
 } from "@prisma/client";
 import { addDays, subDays } from "date-fns";
 import { demoUsers, SEED_DEFAULT_PASSWORD } from "../src/lib/demo-users";
-import { type FlowchartContent } from "../src/lib/flowcharts";
+import {
+  createFlowchartEdge,
+  createFlowchartNode,
+  type FlowchartContent,
+} from "../src/lib/flowcharts";
 import { hashPassword } from "../src/server/auth/password";
 
 const prisma = new PrismaClient();
@@ -627,32 +631,104 @@ const projectFlowchartSpecs: Array<{
     content: {
       nodes: [
         {
+          ...createFlowchartNode({
+            type: "SWIMLANE",
+            label: "Produto & UX",
+            color: "violet",
+            position: { x: 60, y: 60 },
+            size: { width: 300, height: 520 },
+          }),
+          id: "lane-mvp-produto",
+        },
+        {
+          ...createFlowchartNode({
+            type: "SWIMLANE",
+            label: "Engenharia",
+            color: "violet",
+            position: { x: 390, y: 60 },
+            size: { width: 300, height: 520 },
+          }),
+          id: "lane-mvp-engenharia",
+        },
+        {
+          ...createFlowchartNode({
+            type: "START_END",
+            label: "Escopo aprovado",
+            color: "gold",
+            position: { x: 100, y: 120 },
+          }),
+          id: "node-mvp-start",
+        },
+        {
+          ...createFlowchartNode({
+            type: "PROCESS",
+            label: "Desenhar arquitetura simplificada",
+            color: "slate",
+            position: { x: 100, y: 260 },
+          }),
           id: "node-mvp-brief",
-          position: { x: 80, y: 120 },
-          data: { label: "Arquitetura simplificada" },
         },
         {
+          ...createFlowchartNode({
+            type: "SUBPROCESS",
+            label: "Implementar módulo full-stack",
+            color: "slate",
+            position: { x: 430, y: 260 },
+          }),
           id: "node-mvp-build",
-          position: { x: 360, y: 120 },
-          data: { label: "Implementação full-stack" },
         },
         {
+          ...createFlowchartNode({
+            type: "DECISION",
+            label: "Revisao visual aprovada?",
+            color: "violet",
+            position: { x: 450, y: 430 },
+          }),
           id: "node-mvp-review",
-          position: { x: 640, y: 120 },
-          data: { label: "Revisão visual e permissões" },
         },
         {
+          ...createFlowchartNode({
+            type: "DOCUMENT",
+            label: "Seed e roteiro da banca",
+            color: "mint",
+            position: { x: 760, y: 260 },
+          }),
           id: "node-mvp-seed",
-          position: { x: 920, y: 120 },
-          data: { label: "Seed demonstrável para a banca" },
         },
       ],
       edges: [
-        { id: "edge-mvp-1", source: "node-mvp-brief", target: "node-mvp-build" },
-        { id: "edge-mvp-2", source: "node-mvp-build", target: "node-mvp-review" },
-        { id: "edge-mvp-3", source: "node-mvp-review", target: "node-mvp-seed" },
+        {
+          ...createFlowchartEdge({
+            source: "node-mvp-start",
+            target: "node-mvp-brief",
+          }),
+          id: "edge-mvp-0",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-mvp-brief",
+            target: "node-mvp-build",
+          }),
+          id: "edge-mvp-1",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-mvp-build",
+            target: "node-mvp-review",
+          }),
+          id: "edge-mvp-2",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-mvp-review",
+            target: "node-mvp-seed",
+            label: "Sim",
+            accent: "gold",
+          }),
+          id: "edge-mvp-3",
+        },
       ],
-      viewport: { x: 0, y: 0, zoom: 0.88 },
+      viewport: { x: 0, y: 0, zoom: 0.76 },
     },
   },
   {
@@ -663,41 +739,66 @@ const projectFlowchartSpecs: Array<{
     content: {
       nodes: [
         {
+          ...createFlowchartNode({
+            type: "DATA_IO",
+            label: "Tarefas e sprints",
+            color: "gold",
+            position: { x: 100, y: 100 },
+          }),
           id: "node-metricas-tarefas",
-          position: { x: 100, y: 100 },
-          data: { label: "Tarefas e sprints" },
         },
         {
+          ...createFlowchartNode({
+            type: "PROCESS",
+            label: "Agregacao de indicadores",
+            color: "slate",
+            position: { x: 400, y: 100 },
+          }),
           id: "node-metricas-agregacao",
-          position: { x: 390, y: 100 },
-          data: { label: "Agregação de indicadores" },
         },
         {
+          ...createFlowchartNode({
+            type: "DOCUMENT",
+            label: "Cards de progresso",
+            color: "mint",
+            position: { x: 720, y: 60 },
+          }),
           id: "node-metricas-cards",
-          position: { x: 680, y: 60 },
-          data: { label: "Cards de progresso" },
         },
         {
+          ...createFlowchartNode({
+            type: "TEXT",
+            label: "Alertas e gargalos para a orientadora",
+            color: "rose",
+            position: { x: 700, y: 220 },
+          }),
           id: "node-metricas-alertas",
-          position: { x: 680, y: 180 },
-          data: { label: "Alertas e gargalos" },
         },
       ],
       edges: [
         {
+          ...createFlowchartEdge({
+            source: "node-metricas-tarefas",
+            target: "node-metricas-agregacao",
+          }),
           id: "edge-metricas-1",
-          source: "node-metricas-tarefas",
-          target: "node-metricas-agregacao",
         },
         {
+          ...createFlowchartEdge({
+            source: "node-metricas-agregacao",
+            target: "node-metricas-cards",
+          }),
           id: "edge-metricas-2",
-          source: "node-metricas-agregacao",
-          target: "node-metricas-cards",
         },
         {
+          ...createFlowchartEdge({
+            source: "node-metricas-agregacao",
+            target: "node-metricas-alertas",
+            label: "Leitura executiva",
+            lineStyle: "dashed",
+            accent: "neutral",
+          }),
           id: "edge-metricas-3",
-          source: "node-metricas-agregacao",
-          target: "node-metricas-alertas",
         },
       ],
       viewport: { x: 0, y: 0, zoom: 0.9 },
@@ -720,26 +821,129 @@ const taskFlowchartSpecs: Array<{
     content: {
       nodes: [
         {
+          ...createFlowchartNode({
+            type: "MANUAL_OPERATION",
+            label: "Definir enums de role e visibilidade",
+            color: "gold",
+            position: { x: 100, y: 120 },
+          }),
           id: "node-schema-enums",
-          position: { x: 100, y: 120 },
-          data: { label: "Enums de role e visibilidade" },
         },
         {
+          ...createFlowchartNode({
+            type: "SUBPROCESS",
+            label: "Modelar entidades principais",
+            color: "slate",
+            position: { x: 410, y: 120 },
+          }),
           id: "node-schema-models",
-          position: { x: 380, y: 120 },
-          data: { label: "Modelos principais do domínio" },
         },
         {
+          ...createFlowchartNode({
+            type: "DOCUMENT",
+            label: "Indices, migracao e seed",
+            color: "violet",
+            position: { x: 740, y: 120 },
+          }),
           id: "node-schema-indexes",
-          position: { x: 660, y: 120 },
-          data: { label: "Índices, migração e seed" },
         },
       ],
       edges: [
-        { id: "edge-schema-1", source: "node-schema-enums", target: "node-schema-models" },
-        { id: "edge-schema-2", source: "node-schema-models", target: "node-schema-indexes" },
+        {
+          ...createFlowchartEdge({
+            source: "node-schema-enums",
+            target: "node-schema-models",
+          }),
+          id: "edge-schema-1",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-schema-models",
+            target: "node-schema-indexes",
+          }),
+          id: "edge-schema-2",
+        },
       ],
       viewport: { x: 0, y: 0, zoom: 0.92 },
+    },
+  },
+];
+
+const workspaceFlowchartSpecs: Array<{
+  creatorEmail: string;
+  name: string;
+  description: string;
+  content: FlowchartContent;
+}> = [
+  {
+    creatorEmail: "leonardo@tcc.local",
+    name: "Mapa geral da banca",
+    description: "Canvas solto para preparar narrativa, riscos e pontos de demonstração da apresentação final.",
+    content: {
+      nodes: [
+        {
+          ...createFlowchartNode({
+            type: "START_END",
+            label: "Banca do TCC",
+            color: "gold",
+            position: { x: 120, y: 120 },
+          }),
+          id: "node-banca-start",
+        },
+        {
+          ...createFlowchartNode({
+            type: "PROCESS",
+            label: "Contextualizar problema e proposta",
+            color: "slate",
+            position: { x: 420, y: 120 },
+          }),
+          id: "node-banca-contexto",
+        },
+        {
+          ...createFlowchartNode({
+            type: "DOCUMENT",
+            label: "Mostrar workspace funcionando",
+            color: "mint",
+            position: { x: 760, y: 120 },
+          }),
+          id: "node-banca-demo",
+        },
+        {
+          ...createFlowchartNode({
+            type: "NOTE",
+            label: "Levar roteiro impresso e dados seedados",
+            color: "gold",
+            position: { x: 760, y: 320 },
+          }),
+          id: "node-banca-note",
+        },
+      ],
+      edges: [
+        {
+          ...createFlowchartEdge({
+            source: "node-banca-start",
+            target: "node-banca-contexto",
+          }),
+          id: "edge-banca-1",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-banca-contexto",
+            target: "node-banca-demo",
+          }),
+          id: "edge-banca-2",
+        },
+        {
+          ...createFlowchartEdge({
+            source: "node-banca-demo",
+            target: "node-banca-note",
+            lineStyle: "dashed",
+            accent: "gold",
+          }),
+          id: "edge-banca-3",
+        },
+      ],
+      viewport: { x: 0, y: 0, zoom: 0.88 },
     },
   },
 ];
@@ -1022,6 +1226,19 @@ export async function main() {
         type: FlowchartType.MANUAL,
         scopeType: FlowchartScopeType.TASK,
         taskId: createdTasks.get(flowchart.taskCode)!.id,
+        createdById: users.get(flowchart.creatorEmail)!.id,
+        contentJson: flowchart.content,
+      },
+    });
+  }
+
+  for (const flowchart of workspaceFlowchartSpecs) {
+    await prisma.flowchart.create({
+      data: {
+        name: flowchart.name,
+        description: flowchart.description,
+        type: FlowchartType.MANUAL,
+        scopeType: FlowchartScopeType.WORKSPACE,
         createdById: users.get(flowchart.creatorEmail)!.id,
         contentJson: flowchart.content,
       },

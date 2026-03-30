@@ -298,6 +298,8 @@ type ProjectDetailRecord = Prisma.ProjectGetPayload<{
   include: typeof projectDetailInclude;
 }>;
 
+export type VisibleTaskRecord = TaskRecord;
+
 function projectAccessShape(project: {
   visibility: ProjectListRecord["visibility"];
   ownerId: string;
@@ -378,6 +380,21 @@ export async function listVisibleTasks(user: Viewer) {
   return tasks.filter((task) => canSeeTask(user, task));
 }
 
+export async function getTaskDetail(taskId: string, user: Viewer) {
+  const task = await db.task.findUnique({
+    where: {
+      id: taskId,
+    },
+    include: taskInclude,
+  });
+
+  if (!task || !canSeeTask(user, task)) {
+    return null;
+  }
+
+  return task;
+}
+
 export async function listVisibleSprints(user: Viewer) {
   const sprints = await db.sprint.findMany({
     include: sprintInclude,
@@ -448,6 +465,69 @@ export async function getProjectDetail(projectId: string, user: Viewer) {
             ...column,
             tasks: column.tasks.filter((task) => visibleTaskIds.has(task.id)),
           })),
+        }
+      : null,
+  };
+}
+
+export function mapTaskRecordToDetailData(task: TaskRecord) {
+  const taskFlowchart = task.flowcharts.find(
+    (flowchart) => flowchart.type === "MANUAL" && flowchart.scopeType === "TASK",
+  );
+
+  return {
+    id: task.id,
+    code: task.code,
+    title: task.title,
+    summary: task.summary,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    type: task.type,
+    visibility: task.visibility,
+    blocked: task.blocked,
+    dueDate: task.dueDate?.toISOString() ?? null,
+    startDate: task.startDate?.toISOString() ?? null,
+    sprintId: task.sprint?.id ?? null,
+    sprintName: task.sprint?.name ?? null,
+    projectId: task.project.id,
+    projectName: task.project.name,
+    assignees: task.assignees.map((assignee) => ({
+      id: assignee.user.id,
+      name: assignee.user.name,
+      avatarColor: assignee.user.avatarColor,
+    })),
+    checklistItems: task.checklistItems.map((item) => ({
+      id: item.id,
+      content: item.content,
+      done: item.done,
+    })),
+    comments: task.comments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt.toISOString(),
+      author: {
+        id: comment.author.id,
+        name: comment.author.name,
+        avatarColor: comment.author.avatarColor,
+      },
+    })),
+    tags: task.tags.map((tagItem) => ({
+      id: tagItem.tag.id,
+      name: tagItem.tag.name,
+      color: tagItem.tag.color,
+    })),
+    dependencies: task.dependencies.map((dependency) => ({
+      id: dependency.dependsOnTask.id,
+      code: dependency.dependsOnTask.code,
+      title: dependency.dependsOnTask.title,
+      status: dependency.dependsOnTask.status,
+    })),
+    flowchart: taskFlowchart
+      ? {
+          id: taskFlowchart.id,
+          name: taskFlowchart.name,
+          updatedAt: taskFlowchart.updatedAt.toISOString(),
         }
       : null,
   };

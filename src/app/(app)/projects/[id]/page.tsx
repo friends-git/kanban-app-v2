@@ -7,8 +7,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProjectAutomaticFlow } from "@/components/flowcharts/project-automatic-flow";
-import { ProjectFlowchartsPanel } from "@/components/flowcharts/project-flowcharts-panel";
+import { FlowModulePage } from "@/components/flowcharts/flow-module-page";
 import { ProjectTaskComposer } from "@/components/tasks/project-task-composer";
 import { TaskStatusBoardDnd } from "@/components/tasks/task-status-board-dnd";
 import { TaskStatusListDnd } from "@/components/tasks/task-status-list-dnd";
@@ -32,7 +31,8 @@ import {
   listProjectFormOptions,
   listTaskFormOptions,
 } from "@/server/services/reference-data";
-import { getProjectDetail } from "@/server/services/workspace";
+import { getFlowchartDetail } from "@/server/services/flowcharts";
+import { getProjectDetail, mapTaskRecordToDetailData } from "@/server/services/workspace";
 
 type ProjectDetailPageProps = {
   params: Promise<{
@@ -44,6 +44,7 @@ type ProjectDetailPageProps = {
     composer?: string;
     section?: string;
     flowView?: string;
+    diagramId?: string;
   }>;
 };
 
@@ -79,6 +80,12 @@ export default async function ProjectDetailPage({
   )
     ? ((resolvedSearchParams?.flowView as (typeof allowedFlowViews)[number]) ?? "auto")
     : "auto";
+  const selectedDiagramSummary =
+    flowView === "manual"
+      ? project.flowcharts.find((flowchart) => flowchart.id === resolvedSearchParams?.diagramId) ??
+        project.flowcharts[0] ??
+        null
+      : null;
   const selectedTask = project.tasks.find((task) => task.id === resolvedSearchParams?.taskId) ?? null;
   const composerOpen = resolvedSearchParams?.composer === "new-task";
   const projectAccess = {
@@ -111,9 +118,10 @@ export default async function ProjectDetailPage({
   const selectedTaskCanComment = selectedTaskAccess
     ? canCommentTask(user, selectedTaskAccess)
     : false;
-  const [projectFormOptions, taskFormOptions] = await Promise.all([
+  const [projectFormOptions, taskFormOptions, selectedFlowchartDetail] = await Promise.all([
     canManageCurrentProject ? listProjectFormOptions() : Promise.resolve(null),
     canCreateTasks || selectedTask ? listTaskFormOptions(user) : Promise.resolve(null),
+    selectedDiagramSummary ? getFlowchartDetail(selectedDiagramSummary.id, user) : Promise.resolve(null),
   ]);
 
   const taskTabs = [
@@ -146,7 +154,8 @@ export default async function ProjectDetailPage({
       href: buildProjectHref(project.id, {
         section: "flows",
         flowView,
-        taskId: resolvedSearchParams?.taskId,
+        taskId: flowView === "auto" ? resolvedSearchParams?.taskId : undefined,
+        diagramId: selectedDiagramSummary?.id,
       }),
       count: project.flowcharts.length + project.tasks.filter((task) => task.dependencies.length).length,
     },
@@ -159,6 +168,7 @@ export default async function ProjectDetailPage({
         section: "flows",
         flowView: "auto",
         taskId: resolvedSearchParams?.taskId,
+        diagramId: selectedDiagramSummary?.id,
       }),
       count: project.tasks.length,
     },
@@ -168,7 +178,8 @@ export default async function ProjectDetailPage({
       href: buildProjectHref(project.id, {
         section: "flows",
         flowView: "manual",
-        taskId: resolvedSearchParams?.taskId,
+        taskId: undefined,
+        diagramId: selectedDiagramSummary?.id,
       }),
       count: project.flowcharts.length,
     },
@@ -376,122 +387,95 @@ export default async function ProjectDetailPage({
             </Stack>
           </Box>
         ) : (
-          <EntityCard
-            eyebrow="Fluxos"
-            title="Fluxos do projeto"
-            description="Combine a leitura automática das dependências com diagramas manuais criados pela equipe."
-          >
-            <SegmentedTabs value={flowView} items={flowTabs} />
-
-            {flowView === "auto" ? (
-              <ProjectAutomaticFlow
-                tasks={project.tasks.map((task) => ({
-                  id: task.id,
-                  code: task.code,
-                  title: task.title,
-                  status: task.status,
-                  blocked: task.blocked,
-                  sprint: task.sprint
-                    ? {
-                        id: task.sprint.id,
-                        name: task.sprint.name,
-                      }
-                    : null,
-                  assignees: task.assignees.map((assignee) => ({
-                    id: assignee.user.id,
-                    name: assignee.user.name,
-                    avatarColor: assignee.user.avatarColor,
-                  })),
-                  dependencies: task.dependencies.map((dependency) => ({
-                    dependsOnTaskId: dependency.dependsOnTaskId,
-                  })),
-                }))}
-              />
-            ) : (
-              <ProjectFlowchartsPanel
-                projectId={project.id}
-                canManage={canManageCurrentProject}
-                flowcharts={project.flowcharts.map((flowchart) => ({
-                  id: flowchart.id,
-                  name: flowchart.name,
-                  description: flowchart.description,
-                  updatedAt: flowchart.updatedAt.toISOString(),
-                  createdBy: flowchart.createdBy,
-                }))}
-              />
-            )}
-          </EntityCard>
-        )}
-      </Stack>
-
-      <TaskDrawer
-        task={
-          selectedTask
-            ? (() => {
-                const taskFlowchart = selectedTask.flowcharts.find(
-                  (flowchart) =>
-                    flowchart.type === "MANUAL" && flowchart.scopeType === "TASK",
-                );
-
-                return {
-                id: selectedTask.id,
-                code: selectedTask.code,
-                title: selectedTask.title,
-                summary: selectedTask.summary,
-                description: selectedTask.description,
-                status: selectedTask.status,
-                priority: selectedTask.priority,
-                type: selectedTask.type,
-                visibility: selectedTask.visibility,
-                blocked: selectedTask.blocked,
-                dueDate: selectedTask.dueDate?.toISOString() ?? null,
-                startDate: selectedTask.startDate?.toISOString() ?? null,
-                sprintId: selectedTask.sprint?.id ?? null,
-                sprintName: selectedTask.sprint?.name ?? null,
-                projectId: selectedTask.project.id,
-                projectName: project.name,
-                assignees: selectedTask.assignees.map((assignee) => ({
+          <FlowModulePage
+            projectId={project.id}
+            currentMode={flowView}
+            tabs={flowTabs}
+            canManage={canManageCurrentProject}
+            auto={{
+              tasks: project.tasks.map((task) => ({
+                id: task.id,
+                code: task.code,
+                title: task.title,
+                status: task.status,
+                blocked: task.blocked,
+                sprint: task.sprint
+                  ? {
+                      id: task.sprint.id,
+                      name: task.sprint.name,
+                      status: task.sprint.status,
+                    }
+                  : null,
+                assignees: task.assignees.map((assignee) => ({
                   id: assignee.user.id,
                   name: assignee.user.name,
                   avatarColor: assignee.user.avatarColor,
                 })),
-                checklistItems: selectedTask.checklistItems.map((item) => ({
-                  id: item.id,
-                  content: item.content,
-                  done: item.done,
+                dependencies: task.dependencies.map((dependency) => ({
+                  dependsOnTaskId: dependency.dependsOnTaskId,
                 })),
-                comments: selectedTask.comments.map((comment) => ({
-                  id: comment.id,
-                  content: comment.content,
-                  createdAt: comment.createdAt.toISOString(),
-                  author: {
-                    id: comment.author.id,
-                    name: comment.author.name,
-                    avatarColor: comment.author.avatarColor,
-                  },
-                })),
-                tags: selectedTask.tags.map((tagItem) => ({
-                  id: tagItem.tag.id,
-                  name: tagItem.tag.name,
-                  color: tagItem.tag.color,
-                })),
-                dependencies: selectedTask.dependencies.map((dependency) => ({
-                  id: dependency.dependsOnTask.id,
-                  code: dependency.dependsOnTask.code,
-                  title: dependency.dependsOnTask.title,
-                  status: dependency.dependsOnTask.status,
-                })),
-                flowchart: taskFlowchart
+              })),
+              selectedTaskId: selectedTask?.id ?? null,
+              selectedTask: selectedTask
+                ? {
+                    id: selectedTask.id,
+                    code: selectedTask.code,
+                    title: selectedTask.title,
+                    status: selectedTask.status,
+                    blocked: selectedTask.blocked,
+                    sprintName: selectedTask.sprint?.name ?? null,
+                    dependencyTitles: selectedTask.dependencies.map(
+                      (dependency) => dependency.dependsOnTask.title,
+                    ),
+                    assigneeNames: selectedTask.assignees.map((assignee) => assignee.user.name),
+                  }
+                : null,
+            }}
+            manual={{
+              selectedDiagramId: selectedDiagramSummary?.id ?? null,
+              selectedFlowchart: selectedFlowchartDetail
+                ? {
+                    id: selectedFlowchartDetail.id,
+                    name: selectedFlowchartDetail.name,
+                    description: selectedFlowchartDetail.description,
+                    scopeType: selectedFlowchartDetail.scopeType,
+                    canManage: selectedFlowchartDetail.canManage,
+                    updatedAt: selectedFlowchartDetail.updatedAt.toISOString(),
+                    project: selectedFlowchartDetail.project,
+                    task: selectedFlowchartDetail.task,
+                    content: selectedFlowchartDetail.content,
+                  }
+                : null,
+              flowcharts: project.flowcharts.map((flowchart) => ({
+                id: flowchart.id,
+                name: flowchart.name,
+                description: flowchart.description,
+                updatedAt: flowchart.updatedAt.toISOString(),
+                createdBy: flowchart.createdBy
                   ? {
-                      id: taskFlowchart.id,
-                      name: taskFlowchart.name,
-                      updatedAt: taskFlowchart.updatedAt.toISOString(),
+                      name: flowchart.createdBy.name,
                     }
                   : null,
-              };
-            })()
-            : null
-        }
+                href: buildProjectHref(project.id, {
+                  section: "flows",
+                  flowView: "manual",
+                  taskId: undefined,
+                  diagramId: flowchart.id,
+                }),
+                openHref: `/flowcharts/${flowchart.id}`,
+              })),
+              createRedirectBaseHref: buildProjectHref(project.id, {
+                section: "flows",
+                flowView: "manual",
+                taskId: undefined,
+              }),
+            }}
+          />
+        )}
+      </Stack>
+
+      <TaskDrawer
+        task={selectedTask ? mapTaskRecordToDetailData(selectedTask) : null}
         projects={
           taskFormOptions?.projects.map((projectOption) => ({
             id: projectOption.id,
@@ -522,6 +506,7 @@ function buildProjectHref(
     taskView?: (typeof allowedViews)[number];
     flowView?: (typeof allowedFlowViews)[number];
     taskId?: string;
+    diagramId?: string;
   },
 ) {
   const nextParams = new URLSearchParams();
@@ -540,6 +525,10 @@ function buildProjectHref(
 
   if (params.taskId) {
     nextParams.set("taskId", params.taskId);
+  }
+
+  if (params.diagramId) {
+    nextParams.set("diagramId", params.diagramId);
   }
 
   const query = nextParams.toString();

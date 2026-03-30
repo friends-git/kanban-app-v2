@@ -46,8 +46,6 @@ export async function getCurrentUser() {
         },
       });
     }
-
-    cookieStore.delete(SESSION_COOKIE_NAME);
     return null;
   }
 

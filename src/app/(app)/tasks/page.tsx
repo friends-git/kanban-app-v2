@@ -26,7 +26,7 @@ import {
   isReadOnlyRole,
 } from "@/server/permissions";
 import { listTaskFormOptions } from "@/server/services/reference-data";
-import { listVisibleTasks } from "@/server/services/workspace";
+import { listVisibleTasks, mapTaskRecordToDetailData } from "@/server/services/workspace";
 
 type TasksPageProps = {
   searchParams?: Promise<{
@@ -117,7 +117,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       <PageHeader
         eyebrow="Tarefas"
         title="Tarefas do TCC"
-        description="Organize o trabalho do grupo por status, projeto, sprint e responsabilidade, com detalhe rápido no painel lateral."
+        description="Organize o trabalho do grupo por status, projeto, sprint e responsabilidade, com detalhe rápido no painel lateral e página completa quando precisar de foco."
         chips={["Quadro e listas", "Checklist central", "Acompanhamento por sprint"]}
           actions={
             canCreateAnyTask ? (
@@ -167,7 +167,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       </Stack>
 
       <TaskDrawer
-        task={selectedTask ? mapTaskToDrawerTask(selectedTask) : null}
+        task={selectedTask ? mapTaskRecordToDetailData(selectedTask) : null}
         projects={taskFormOptions.projects.map((project) => ({
           id: project.id,
           name: project.name,
@@ -463,71 +463,6 @@ function toTaskDndListItem(
         avatarColor: assignee.user.avatarColor,
       },
     })),
-  };
-}
-
-function mapTaskToDrawerTask(
-  task: Awaited<ReturnType<typeof listVisibleTasks>>[number],
-) {
-  const taskFlowchart = task.flowcharts.find(
-    (flowchart) => flowchart.type === "MANUAL" && flowchart.scopeType === "TASK",
-  );
-
-  return {
-    id: task.id,
-    code: task.code,
-    title: task.title,
-    summary: task.summary,
-    description: task.description,
-    status: task.status,
-    priority: task.priority,
-    type: task.type,
-    visibility: task.visibility,
-    blocked: task.blocked,
-    dueDate: task.dueDate?.toISOString() ?? null,
-    startDate: task.startDate?.toISOString() ?? null,
-    sprintId: task.sprint?.id ?? null,
-    sprintName: task.sprint?.name ?? null,
-    projectId: task.project.id,
-    projectName: task.project.name,
-    assignees: task.assignees.map((assignee) => ({
-      id: assignee.user.id,
-      name: assignee.user.name,
-      avatarColor: assignee.user.avatarColor,
-    })),
-    checklistItems: task.checklistItems.map((item) => ({
-      id: item.id,
-      content: item.content,
-      done: item.done,
-    })),
-    comments: task.comments.map((comment) => ({
-      id: comment.id,
-      content: comment.content,
-      createdAt: comment.createdAt.toISOString(),
-      author: {
-        id: comment.author.id,
-        name: comment.author.name,
-        avatarColor: comment.author.avatarColor,
-      },
-    })),
-    tags: task.tags.map((tagItem) => ({
-      id: tagItem.tag.id,
-      name: tagItem.tag.name,
-      color: tagItem.tag.color,
-    })),
-    dependencies: task.dependencies.map((dependency) => ({
-      id: dependency.dependsOnTask.id,
-      code: dependency.dependsOnTask.code,
-      title: dependency.dependsOnTask.title,
-      status: dependency.dependsOnTask.status,
-    })),
-    flowchart: taskFlowchart
-      ? {
-          id: taskFlowchart.id,
-          name: taskFlowchart.name,
-          updatedAt: taskFlowchart.updatedAt.toISOString(),
-        }
-      : null,
   };
 }
 

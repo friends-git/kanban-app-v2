@@ -1,6 +1,7 @@
 export const primaryNavigation = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard" },
   { href: "/projects", label: "Projetos", key: "projects" },
+  { href: "/flowcharts", label: "Diagramas", key: "flowcharts" },
   { href: "/tasks", label: "Tarefas", key: "tasks" },
   { href: "/teams", label: "Equipes", key: "teams" },
   { href: "/sprints", label: "Sprints", key: "sprints" },

@@ -5,6 +5,7 @@ import {
   ProjectStatus,
   ProjectVisibility,
   SprintStatus,
+  FlowchartScopeType,
   TaskPriority,
   TaskStatus,
   TaskType,
@@ -79,4 +80,10 @@ export const taskVisibilityLabels: Record<TaskVisibility, string> = {
   PROJECT: "Projeto",
   ASSIGNEES: "Atribuídos",
   LEADERS_ONLY: "Lideranças",
+};
+
+export const flowchartScopeLabels: Record<FlowchartScopeType, string> = {
+  WORKSPACE: "Diagrama solto",
+  PROJECT: "Diagrama do projeto",
+  TASK: "Diagrama da tarefa",
 };

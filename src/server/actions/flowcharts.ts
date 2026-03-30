@@ -12,13 +12,24 @@ import {
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  createWorkspaceFlowchartContent,
   createProjectFlowchartContent,
   createTaskFlowchartContent,
+  flowEdgeAccents,
+  flowEdgeLineStyles,
+  flowEdgeTypes,
+  flowLaneOrientations,
+  flowNodeColorKeys,
+  flowNodeTypes,
   sanitizeFlowchartContent,
 } from "@/lib/flowcharts";
 import { requireUser } from "@/server/auth/session";
 import { db } from "@/server/db";
-import { canManageProject, canManageTask } from "@/server/permissions";
+import {
+  canManageProject,
+  canManageTask,
+  canManageWorkspaceFlowchart,
+} from "@/server/permissions";
 import { normalizeText } from "@/server/actions/utils";
 
 type ActionResult =
@@ -41,6 +52,13 @@ const flowchartContentSchema = z.object({
         }),
         data: z.object({
           label: z.string(),
+          type: z.enum(flowNodeTypes),
+          color: z.enum(flowNodeColorKeys),
+          size: z.object({
+            width: z.number(),
+            height: z.number(),
+          }),
+          orientation: z.enum(flowLaneOrientations).optional(),
         }),
       }),
     )
@@ -51,6 +69,14 @@ const flowchartContentSchema = z.object({
         id: z.string().min(1),
         source: z.string().min(1),
         target: z.string().min(1),
+        type: z.enum(flowEdgeTypes),
+        label: z.string().optional(),
+        style: z
+          .object({
+            accent: z.enum(flowEdgeAccents).optional(),
+            lineStyle: z.enum(flowEdgeLineStyles).optional(),
+          })
+          .optional(),
       }),
     )
     .default([]),
@@ -65,6 +91,11 @@ const flowchartContentSchema = z.object({
 
 const createProjectFlowchartSchema = z.object({
   projectId: z.string().min(1),
+  name: z.string().trim().min(3, "Informe um nome com pelo menos 3 caracteres."),
+  description: z.string().max(5000).optional().nullable(),
+});
+
+const createWorkspaceFlowchartSchema = z.object({
   name: z.string().trim().min(3, "Informe um nome com pelo menos 3 caracteres."),
   description: z.string().max(5000).optional().nullable(),
 });
@@ -86,6 +117,13 @@ const duplicateFlowchartSchema = z.object({
 
 const archiveFlowchartSchema = z.object({
   flowchartId: z.string().min(1),
+});
+
+const updateFlowchartRelationSchema = z.object({
+  flowchartId: z.string().min(1),
+  scopeType: z.nativeEnum(FlowchartScopeType),
+  projectId: z.string().optional().nullable(),
+  taskId: z.string().optional().nullable(),
 });
 
 function projectAccessShape(project: {
@@ -123,6 +161,7 @@ function revalidateFlowchartPaths(input: {
   projectId?: string | null;
   taskId?: string | null;
 }) {
+  revalidatePath("/flowcharts");
   revalidatePath("/projects");
 
   if (input.projectId) {
@@ -246,6 +285,15 @@ async function getFlowchartForMutation(flowchartId: string, user: MutationViewer
     } as const;
   }
 
+  if (flowchart.scopeType === FlowchartScopeType.WORKSPACE) {
+    return {
+      flowchart,
+      canManage: canManageWorkspaceFlowchart(user),
+      projectId: null,
+      taskId: null,
+    } as const;
+  }
+
   if (flowchart.scopeType === FlowchartScopeType.PROJECT) {
     if (!flowchart.project) {
       return {
@@ -273,6 +321,50 @@ async function getFlowchartForMutation(flowchartId: string, user: MutationViewer
     projectId: flowchart.task.project.id,
     taskId: flowchart.task.id,
   } as const;
+}
+
+export async function createWorkspaceFlowchartAction(
+  input: z.input<typeof createWorkspaceFlowchartSchema>,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = createWorkspaceFlowchartSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Dados inválidos para criar o diagrama.",
+    };
+  }
+
+  if (!canManageWorkspaceFlowchart(user)) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para criar diagramas soltos no workspace.",
+    };
+  }
+
+  const flowchart = await db.flowchart.create({
+    data: {
+      name: parsed.data.name.trim(),
+      description: normalizeText(parsed.data.description),
+      type: FlowchartType.MANUAL,
+      scopeType: FlowchartScopeType.WORKSPACE,
+      createdById: user.id,
+      contentJson: createWorkspaceFlowchartContent(parsed.data.name.trim()) as Prisma.InputJsonValue,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  revalidateFlowchartPaths({
+    flowchartId: flowchart.id,
+  });
+
+  return {
+    ok: true,
+    flowchartId: flowchart.id,
+  };
 }
 
 export async function createProjectFlowchartAction(
@@ -489,20 +581,20 @@ export async function duplicateFlowchartAction(
     };
   }
 
-  if (flowchartState.flowchart.scopeType !== FlowchartScopeType.PROJECT) {
-    return {
-      ok: false,
-      error: "A duplicação está disponível apenas para diagramas do projeto.",
-    };
-  }
-
   const duplicated = await db.flowchart.create({
     data: {
       name: `${flowchartState.flowchart.name} (cópia)`,
       description: flowchartState.flowchart.description,
       type: FlowchartType.MANUAL,
-      scopeType: FlowchartScopeType.PROJECT,
-      projectId: flowchartState.projectId,
+      scopeType: flowchartState.flowchart.scopeType,
+      projectId:
+        flowchartState.flowchart.scopeType === FlowchartScopeType.PROJECT
+          ? flowchartState.projectId
+          : null,
+      taskId:
+        flowchartState.flowchart.scopeType === FlowchartScopeType.TASK
+          ? flowchartState.taskId
+          : null,
       createdById: user.id,
       contentJson: sanitizeFlowchartContent(flowchartState.flowchart.contentJson) as Prisma.InputJsonValue,
     },
@@ -519,6 +611,129 @@ export async function duplicateFlowchartAction(
   return {
     ok: true,
     flowchartId: duplicated.id,
+  };
+}
+
+export async function updateFlowchartRelationAction(
+  input: z.input<typeof updateFlowchartRelationSchema>,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = updateFlowchartRelationSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Dados inválidos para vincular o diagrama.",
+    };
+  }
+
+  const flowchartState = await getFlowchartForMutation(parsed.data.flowchartId, user);
+
+  if ("error" in flowchartState) {
+    return {
+      ok: false,
+      error: flowchartState.error ?? "Fluxograma não encontrado.",
+    };
+  }
+
+  if (!flowchartState.canManage) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para alterar o vínculo deste diagrama.",
+    };
+  }
+
+  let nextProjectId: string | null = null;
+  let nextTaskId: string | null = null;
+
+  if (parsed.data.scopeType === FlowchartScopeType.WORKSPACE) {
+    if (!canManageWorkspaceFlowchart(user)) {
+      return {
+        ok: false,
+        error: "Você não tem permissão para manter diagramas soltos no workspace.",
+      };
+    }
+  }
+
+  if (parsed.data.scopeType === FlowchartScopeType.PROJECT) {
+    if (!parsed.data.projectId) {
+      return {
+        ok: false,
+        error: "Selecione um projeto para vincular o diagrama.",
+      };
+    }
+
+    const project = await getProjectForMutation(parsed.data.projectId);
+
+    if (!project) {
+      return {
+        ok: false,
+        error: "Projeto não encontrado.",
+      };
+    }
+
+    if (!canManageProject(user, projectAccessShape(project))) {
+      return {
+        ok: false,
+        error: "Você não pode vincular este diagrama a esse projeto.",
+      };
+    }
+
+    nextProjectId = project.id;
+  }
+
+  if (parsed.data.scopeType === FlowchartScopeType.TASK) {
+    if (!parsed.data.taskId) {
+      return {
+        ok: false,
+        error: "Selecione uma tarefa para vincular o diagrama.",
+      };
+    }
+
+    const task = await getTaskForMutation(parsed.data.taskId);
+
+    if (!task) {
+      return {
+        ok: false,
+        error: "Tarefa não encontrada.",
+      };
+    }
+
+    if (!canManageTask(user, taskAccessShape(task))) {
+      return {
+        ok: false,
+        error: "Você não pode vincular este diagrama a essa tarefa.",
+      };
+    }
+
+    nextTaskId = task.id;
+  }
+
+  await db.flowchart.update({
+    where: {
+      id: flowchartState.flowchart.id,
+    },
+    data: {
+      scopeType: parsed.data.scopeType,
+      projectId: parsed.data.scopeType === FlowchartScopeType.PROJECT ? nextProjectId : null,
+      taskId: parsed.data.scopeType === FlowchartScopeType.TASK ? nextTaskId : null,
+    },
+  });
+
+  revalidateFlowchartPaths({
+    flowchartId: flowchartState.flowchart.id,
+    projectId: flowchartState.projectId,
+    taskId: flowchartState.taskId,
+  });
+  revalidateFlowchartPaths({
+    flowchartId: flowchartState.flowchart.id,
+    projectId: nextProjectId,
+    taskId: nextTaskId,
+  });
+
+  return {
+    ok: true,
+    flowchartId: flowchartState.flowchart.id,
   };
 }
 
