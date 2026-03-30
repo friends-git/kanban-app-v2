@@ -2,7 +2,12 @@ import "server-only";
 
 import { GlobalRole } from "@prisma/client";
 import { db } from "@/server/db";
-import { canReadProject, canReadTask } from "@/server/permissions";
+import {
+  canManageProject,
+  canManageTask,
+  canReadProject,
+  canReadTask,
+} from "@/server/permissions";
 
 type Viewer = {
   id: string;
@@ -142,6 +147,72 @@ export async function listTaskFormOptions(user: Viewer) {
         tasks: project.tasks
           .filter((task) =>
             canReadTask(user, {
+              creatorId: task.creatorId,
+              visibility: task.visibility,
+              assignees: task.assignees,
+              project: {
+                visibility: project.visibility,
+                ownerId: project.ownerId,
+                members: project.members,
+              },
+            }),
+          )
+          .map((task) => ({
+            id: task.id,
+            code: task.code,
+            title: task.title,
+          })),
+      })),
+  };
+}
+
+export async function listFlowchartRelationOptions(user: Viewer) {
+  const projects = await db.project.findMany({
+    include: {
+      members: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
+      tasks: {
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          visibility: true,
+          creatorId: true,
+          assignees: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return {
+    projects: projects
+      .filter((project) =>
+        canManageProject(user, {
+          visibility: project.visibility,
+          ownerId: project.ownerId,
+          members: project.members,
+        }),
+      )
+      .map((project) => ({
+        id: project.id,
+        name: project.name,
+        tasks: project.tasks
+          .filter((task) =>
+            canManageTask(user, {
               creatorId: task.creatorId,
               visibility: task.visibility,
               assignees: task.assignees,

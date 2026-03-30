@@ -6,6 +6,7 @@ import {
   AddRounded,
   CloseRounded,
   DeleteOutlineRounded,
+  OpenInNewRounded,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -133,6 +134,7 @@ type TaskDetailContentProps = {
   canComment: boolean;
   onClose?: () => void;
   variant?: "drawer" | "page";
+  showHeader?: boolean;
 };
 
 type TaskFormState = {
@@ -175,6 +177,7 @@ export function TaskDetailContent({
   canComment,
   onClose,
   variant = "drawer",
+  showHeader = true,
 }: TaskDetailContentProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -381,56 +384,70 @@ export function TaskDetailContent({
       spacing={3}
       sx={{
         p: variant === "drawer" ? { xs: 2.5, md: 3.25 } : 0,
-        height: "100%",
-        overflowY: "auto",
+        height: variant === "drawer" ? "100%" : "auto",
+        overflowY: variant === "drawer" ? "auto" : "visible",
       }}
     >
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        spacing={2}
-        sx={{ pb: 2.5, borderBottom: "1px solid", borderColor: "divider" }}
-      >
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{ color: "secondary.main", letterSpacing: "0.16em" }}
-          >
-            {task.projectName} • {task.code}
-          </Typography>
-          {canManage ? (
-            <TextField
-              fullWidth
-              variant="standard"
-              value={form.title}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, title: event.target.value }))
-              }
-              sx={{
-                mt: 0.5,
-                "& .MuiInputBase-input": {
-                  fontSize: "1.5rem",
-                  fontWeight: 800,
-                  letterSpacing: "-0.04em",
-                },
-              }}
-            />
-          ) : (
-            <Typography variant="h3" sx={{ mt: 0.75 }}>
-              {task.title}
+      {showHeader ? (
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          spacing={2}
+          sx={{ pb: 2.5, borderBottom: "1px solid", borderColor: "divider" }}
+        >
+          <Box>
+            <Typography
+              variant="overline"
+              sx={{ color: "secondary.main", letterSpacing: "0.16em" }}
+            >
+              {task.projectName} • {task.code}
             </Typography>
-          )}
-          <Typography color="text.secondary" sx={{ mt: 1.1, maxWidth: 420 }}>
-            {task.summary ?? "Sem resumo"}
-          </Typography>
-        </Box>
+            {canManage ? (
+              <TextField
+                fullWidth
+                variant="standard"
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, title: event.target.value }))
+                }
+                sx={{
+                  mt: 0.5,
+                  "& .MuiInputBase-input": {
+                    fontSize: "1.5rem",
+                    fontWeight: 800,
+                    letterSpacing: "-0.04em",
+                  },
+                }}
+              />
+            ) : (
+              <Typography variant="h3" sx={{ mt: 0.75 }}>
+                {task.title}
+              </Typography>
+            )}
+            <Typography color="text.secondary" sx={{ mt: 1.1, maxWidth: 420 }}>
+              {task.summary ?? "Sem resumo"}
+            </Typography>
+          </Box>
 
-        {onClose ? (
-          <IconButton onClick={onClose}>
-            <CloseRounded />
-          </IconButton>
-        ) : null}
-      </Stack>
+          <Stack direction="row" spacing={1} alignItems="flex-start">
+            {variant === "drawer" ? (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<OpenInNewRounded />}
+                onClick={() => router.push(`/tasks/${task.id}`)}
+              >
+                Abrir página
+              </Button>
+            ) : null}
+            {onClose ? (
+              <IconButton onClick={onClose}>
+                <CloseRounded />
+              </IconButton>
+            ) : null}
+          </Stack>
+        </Stack>
+      ) : null}
 
       {message ? <Alert severity={message.type}>{message.text}</Alert> : null}
 

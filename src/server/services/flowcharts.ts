@@ -13,6 +13,8 @@ import {
   canManageTask,
   canReadProject,
   canReadTask,
+  canManageWorkspaceFlowchart,
+  canReadWorkspaceFlowchart,
 } from "@/server/permissions";
 
 type Viewer = {
@@ -118,7 +120,7 @@ export async function getFlowchartDetail(flowchartId: string, user: Viewer) {
       ? canReadTask(user, taskAccessShape(flowchart.task))
       : flowchart.project
         ? canReadProject(user, projectAccessShape(flowchart.project))
-        : false;
+        : canReadWorkspaceFlowchart(user);
 
   if (!canRead) {
     return null;
@@ -129,7 +131,7 @@ export async function getFlowchartDetail(flowchartId: string, user: Viewer) {
       ? canManageTask(user, taskAccessShape(flowchart.task))
       : flowchart.project
         ? canManageProject(user, projectAccessShape(flowchart.project))
-        : false;
+        : canManageWorkspaceFlowchart(user);
 
   const project = flowchart.task?.project ?? flowchart.project;
 
@@ -157,5 +159,126 @@ export async function getFlowchartDetail(flowchartId: string, user: Viewer) {
           title: flowchart.task.title,
         }
       : null,
+  };
+}
+
+export async function listVisibleFlowcharts(user: Viewer) {
+  const flowcharts = await db.flowchart.findMany({
+    where: {
+      isArchived: false,
+      type: "MANUAL",
+    },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          avatarColor: true,
+        },
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+          visibility: true,
+          ownerId: true,
+          members: {
+            select: {
+              userId: true,
+              role: true,
+            },
+          },
+        },
+      },
+      task: {
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          creatorId: true,
+          visibility: true,
+          assignees: {
+            select: {
+              userId: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              visibility: true,
+              ownerId: true,
+              members: {
+                select: {
+                  userId: true,
+                  role: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  const visibleFlowcharts = flowcharts
+    .filter((flowchart) => {
+      if (flowchart.task) {
+        return canReadTask(user, taskAccessShape(flowchart.task));
+      }
+
+      if (flowchart.project) {
+        return canReadProject(user, projectAccessShape(flowchart.project));
+      }
+
+      return canReadWorkspaceFlowchart(user);
+    })
+    .map((flowchart) => {
+      const project = flowchart.task?.project ?? flowchart.project;
+      const canManage =
+        flowchart.task
+          ? canManageTask(user, taskAccessShape(flowchart.task))
+          : flowchart.project
+            ? canManageProject(user, projectAccessShape(flowchart.project))
+            : canManageWorkspaceFlowchart(user);
+
+      return {
+        id: flowchart.id,
+        name: flowchart.name,
+        description: flowchart.description,
+        scopeType: flowchart.scopeType,
+        updatedAt: flowchart.updatedAt,
+        createdAt: flowchart.createdAt,
+        canManage,
+        createdBy: flowchart.createdBy
+          ? {
+              id: flowchart.createdBy.id,
+              name: flowchart.createdBy.name,
+              avatarColor: flowchart.createdBy.avatarColor,
+            }
+          : null,
+        project: project
+          ? {
+              id: project.id,
+              name: project.name,
+            }
+          : null,
+        task: flowchart.task
+          ? {
+              id: flowchart.task.id,
+              code: flowchart.task.code,
+              title: flowchart.task.title,
+            }
+          : null,
+      };
+    });
+
+  return {
+    workspace: visibleFlowcharts.filter((flowchart) => flowchart.scopeType === "WORKSPACE"),
+    projects: visibleFlowcharts.filter((flowchart) => flowchart.scopeType === "PROJECT"),
+    tasks: visibleFlowcharts.filter((flowchart) => flowchart.scopeType === "TASK"),
   };
 }

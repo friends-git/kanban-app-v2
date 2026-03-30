@@ -136,3 +136,11 @@ export function canManageTask(user: Viewer, task: TaskAccessShape) {
 export function canCommentTask(user: Viewer, task: TaskAccessShape) {
   return !isReadOnlyRole(user) && canReadTask(user, task);
 }
+
+export function canReadWorkspaceFlowchart(user: Viewer) {
+  return user.role !== GlobalRole.COLLABORATOR;
+}
+
+export function canManageWorkspaceFlowchart(user: Viewer) {
+  return isAdmin(user) || user.role === GlobalRole.MEMBER;
+}

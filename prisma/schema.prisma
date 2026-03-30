@@ -90,6 +90,7 @@ enum FlowchartType {
 }
 
 enum FlowchartScopeType {
+  WORKSPACE
   PROJECT
   TASK
 }
