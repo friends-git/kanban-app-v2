@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
+  AccountTreeRounded,
   AddRounded,
   CloseRounded,
   DeleteOutlineRounded,
@@ -40,6 +41,7 @@ import {
   updateChecklistItemAction,
   updateTaskAction,
 } from "@/server/actions/tasks";
+import { ensureTaskFlowchartAction } from "@/server/actions/flowcharts";
 import {
   taskPriorityLabels,
   taskStatusLabels,
@@ -94,6 +96,17 @@ export type TaskDetailData = {
     name: string;
     color: string;
   }>;
+  dependencies: Array<{
+    id: string;
+    code: string;
+    title: string;
+    status: TaskStatus;
+  }>;
+  flowchart: {
+    id: string;
+    name: string;
+    updatedAt: string | null;
+  } | null;
 };
 
 type TaskDetailContentProps = {
@@ -104,6 +117,11 @@ type TaskDetailContentProps = {
     sprints: Array<{
       id: string;
       name: string;
+    }>;
+    tasks: Array<{
+      id: string;
+      code: string;
+      title: string;
     }>;
   }>;
   users: Array<{
@@ -129,6 +147,7 @@ type TaskFormState = {
   projectId: string;
   sprintId: string;
   assigneeIds: string[];
+  dependencyIds: string[];
 };
 
 function getInitialFormState(task: TaskDetailData): TaskFormState {
@@ -144,6 +163,7 @@ function getInitialFormState(task: TaskDetailData): TaskFormState {
     projectId: task.projectId,
     sprintId: task.sprintId ?? "",
     assigneeIds: task.assignees.map((assignee) => assignee.id),
+    dependencyIds: task.dependencies.map((dependency) => dependency.id),
   };
 }
 
@@ -182,6 +202,23 @@ export function TaskDetailContent({
     }
   }, [currentProject, form.sprintId]);
 
+  useEffect(() => {
+    const availableTaskIds = new Set(
+      (currentProject?.tasks ?? [])
+        .filter((projectTask) => projectTask.id !== task.id)
+        .map((projectTask) => projectTask.id),
+    );
+
+    if (form.dependencyIds.some((dependencyId) => !availableTaskIds.has(dependencyId))) {
+      setForm((current) => ({
+        ...current,
+        dependencyIds: current.dependencyIds.filter((dependencyId) =>
+          availableTaskIds.has(dependencyId),
+        ),
+      }));
+    }
+  }, [currentProject, form.dependencyIds, task.id]);
+
   const checklistDoneCount = task.checklistItems.filter((item) => item.done).length;
   const checklistProgress = task.checklistItems.length
     ? Math.round((checklistDoneCount / task.checklistItems.length) * 100)
@@ -204,6 +241,7 @@ export function TaskDetailContent({
         projectId: form.projectId,
         sprintId: form.sprintId || null,
         assigneeIds: form.assigneeIds,
+        dependencyIds: form.dependencyIds,
       });
 
       if (!result.ok) {
@@ -313,6 +351,28 @@ export function TaskDetailContent({
 
       setNewComment("");
       router.refresh();
+    });
+  };
+
+  const handleTaskDiagramOpen = () => {
+    setMessage(null);
+
+    if (task.flowchart) {
+      router.push(`/flowcharts/${task.flowchart.id}`);
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await ensureTaskFlowchartAction({
+        taskId: task.id,
+      });
+
+      if (!result.ok) {
+        setMessage({ type: "error", text: result.error });
+        return;
+      }
+
+      router.push(`/flowcharts/${result.flowchartId}`);
     });
   };
 
@@ -445,6 +505,51 @@ export function TaskDetailContent({
           </Typography>
         )}
       </Box>
+
+      <DrawerSection title="Diagrama">
+        <Box
+          sx={{
+            p: 2.25,
+            borderRadius: 4.5,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "action.hover",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            spacing={2}
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Stack spacing={0.75}>
+              <Typography fontWeight={700}>
+                {task.flowchart ? task.flowchart.name : "Sem diagrama manual"}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                {task.flowchart
+                  ? `Última atualização em ${formatFullDate(task.flowchart.updatedAt)}.`
+                  : "Crie um diagrama manual para mapear lógica, decisões e pontos de handoff desta tarefa."}
+              </Typography>
+            </Stack>
+
+            {canManage || task.flowchart ? (
+              <Button
+                onClick={handleTaskDiagramOpen}
+                variant="contained"
+                startIcon={<AccountTreeRounded />}
+                disabled={isPending}
+              >
+                {isPending
+                  ? "Abrindo..."
+                  : task.flowchart
+                    ? "Abrir diagrama"
+                    : "Criar diagrama"}
+              </Button>
+            ) : null}
+          </Stack>
+        </Box>
+      </DrawerSection>
 
       <DrawerSection title="Propriedades">
         <Box
@@ -645,6 +750,59 @@ export function TaskDetailContent({
                 <Typography fontWeight={700}>
                   {task.blocked ? "Bloqueada" : "Sem bloqueio"}
                 </Typography>
+              )}
+            </PropertyField>
+
+            <PropertyField label="Dependências">
+              {canManage ? (
+                <TextField
+                  fullWidth
+                  select
+                  SelectProps={{
+                    multiple: true,
+                    renderValue: (selected) =>
+                      (selected as string[])
+                        .map((dependencyId) => {
+                          const dependency = (currentProject?.tasks ?? []).find(
+                            (projectTask) => projectTask.id === dependencyId,
+                          );
+
+                          return dependency
+                            ? `${dependency.code} · ${dependency.title}`
+                            : "Tarefa";
+                        })
+                        .join(", "),
+                  }}
+                  value={form.dependencyIds}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      dependencyIds: event.target.value as unknown as string[],
+                    }))
+                  }
+                >
+                  {(currentProject?.tasks ?? [])
+                    .filter((projectTask) => projectTask.id !== task.id)
+                    .map((projectTask) => (
+                      <MenuItem key={projectTask.id} value={projectTask.id}>
+                        <Checkbox checked={form.dependencyIds.includes(projectTask.id)} />
+                        <ListItemText
+                          primary={projectTask.title}
+                          secondary={projectTask.code}
+                        />
+                      </MenuItem>
+                    ))}
+                </TextField>
+              ) : task.dependencies.length ? (
+                <Stack spacing={0.75}>
+                  {task.dependencies.map((dependency) => (
+                    <Typography key={dependency.id} fontWeight={700}>
+                      {dependency.code} · {dependency.title}
+                    </Typography>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography fontWeight={700}>Sem dependências</Typography>
               )}
             </PropertyField>
 

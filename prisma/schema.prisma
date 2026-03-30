@@ -84,6 +84,16 @@ enum TaskType {
   MEETING
 }
 
+enum FlowchartType {
+  AUTO
+  MANUAL
+}
+
+enum FlowchartScopeType {
+  PROJECT
+  TASK
+}
+
 model User {
   id                 String          @id @default(cuid())
   name               String
@@ -103,6 +113,7 @@ model User {
   taskHistoryEntries TaskHistory[]   @relation("TaskHistoryActor")
   createdTasks       Task[]          @relation("TaskCreator")
   ownedProjects      Project[]       @relation("ProjectOwner")
+  createdFlowcharts  Flowchart[]     @relation("FlowchartCreator")
 }
 
 model Session {
@@ -164,6 +175,7 @@ model Project {
   sprints     Sprint[]
   board       Board?
   tasks       Task[]
+  flowcharts  Flowchart[]
 
   @@index([ownerId])
   @@index([teamId])
@@ -254,6 +266,9 @@ model Task {
   checklistItems TaskChecklistItem[]
   tags           TaskTag[]
   historyEntries TaskHistory[]
+  dependencies   TaskDependency[]    @relation("TaskDependencies")
+  dependents     TaskDependency[]    @relation("TaskDependents")
+  flowcharts     Flowchart[]
 
   @@index([projectId])
   @@index([sprintId])
@@ -261,6 +276,19 @@ model Task {
   @@index([creatorId])
   @@index([status])
   @@index([dueDate])
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  taskId          String
+  dependsOnTaskId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  task            Task     @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask   Task     @relation("TaskDependents", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@index([dependsOnTaskId])
 }
 
 model TaskAssignee {
@@ -331,4 +359,27 @@ model TaskHistory {
 
   @@index([taskId])
   @@index([actorId])
+}
+
+model Flowchart {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  type        FlowchartType
+  scopeType   FlowchartScopeType
+  projectId   String?
+  taskId      String?
+  contentJson Json?
+  createdById String?
+  isArchived  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  project     Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task        Task?              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy   User?              @relation("FlowchartCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([createdById])
+  @@index([type, scopeType, isArchived])
 }

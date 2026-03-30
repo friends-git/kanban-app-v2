@@ -31,6 +31,7 @@ const taskMutationSchema = z.object({
   projectId: z.string().min(1, "Selecione um projeto."),
   sprintId: z.string().optional().nullable(),
   assigneeIds: z.array(z.string()).default([]),
+  dependencyIds: z.array(z.string()).default([]),
   status: z.nativeEnum(TaskStatus),
   priority: z.nativeEnum(TaskPriority),
   type: z.nativeEnum(TaskType),
@@ -150,6 +151,47 @@ async function resolveSprintId(project: Awaited<ReturnType<typeof findProjectFor
   return sprint ? sprint.id : null;
 }
 
+async function resolveDependencyIds(
+  projectId: string,
+  dependencyIds: string[],
+  currentTaskId?: string,
+) {
+  const uniqueDependencyIds = [...new Set(dependencyIds.filter(Boolean))].filter(
+    (dependencyId) => dependencyId !== currentTaskId,
+  );
+
+  if (!uniqueDependencyIds.length) {
+    return {
+      ok: true as const,
+      dependencyIds: [],
+    };
+  }
+
+  const tasks = await db.task.findMany({
+    where: {
+      id: {
+        in: uniqueDependencyIds,
+      },
+      projectId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (tasks.length !== uniqueDependencyIds.length) {
+    return {
+      ok: false as const,
+      error: "Uma ou mais dependências selecionadas não pertencem a este projeto.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    dependencyIds: uniqueDependencyIds,
+  };
+}
+
 export async function createTaskAction(
   input: z.input<typeof taskMutationSchema>,
 ): Promise<ActionResult> {
@@ -185,6 +227,17 @@ export async function createTaskAction(
   const sprintId = await resolveSprintId(project, parsed.data.sprintId);
   const boardColumnId = await getBoardColumnId(project.id, parsed.data.status);
   const assigneeIds = [...new Set(parsed.data.assigneeIds.filter(Boolean))];
+  const resolvedDependencies = await resolveDependencyIds(
+    project.id,
+    parsed.data.dependencyIds,
+  );
+
+  if (!resolvedDependencies.ok) {
+    return {
+      ok: false,
+      error: resolvedDependencies.error,
+    };
+  }
 
   const task = await db.task.create({
     data: {
@@ -206,6 +259,11 @@ export async function createTaskAction(
       assignees: {
         create: assigneeIds.map((assigneeId) => ({
           userId: assigneeId,
+        })),
+      },
+      dependencies: {
+        create: resolvedDependencies.dependencyIds.map((dependencyId) => ({
+          dependsOnTaskId: dependencyId,
         })),
       },
       historyEntries: {
@@ -303,6 +361,18 @@ export async function updateTaskAction(
   const sprintId = await resolveSprintId(targetProject, parsed.data.sprintId);
   const boardColumnId = await getBoardColumnId(targetProject.id, parsed.data.status);
   const assigneeIds = [...new Set(parsed.data.assigneeIds.filter(Boolean))];
+  const resolvedDependencies = await resolveDependencyIds(
+    targetProject.id,
+    parsed.data.dependencyIds,
+    existingTask.id,
+  );
+
+  if (!resolvedDependencies.ok) {
+    return {
+      ok: false,
+      error: resolvedDependencies.error,
+    };
+  }
   const completedAt =
     parsed.data.status === TaskStatus.DONE
       ? existingTask.completedAt ?? new Date()
@@ -330,6 +400,12 @@ export async function updateTaskAction(
         deleteMany: {},
         create: assigneeIds.map((assigneeId) => ({
           userId: assigneeId,
+        })),
+      },
+      dependencies: {
+        deleteMany: {},
+        create: resolvedDependencies.dependencyIds.map((dependencyId) => ({
+          dependsOnTaskId: dependencyId,
         })),
       },
       historyEntries: {

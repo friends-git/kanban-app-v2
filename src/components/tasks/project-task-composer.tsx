@@ -38,6 +38,11 @@ type ProjectTaskComposerProps = {
       id: string;
       name: string;
     }>;
+    tasks: Array<{
+      id: string;
+      code: string;
+      title: string;
+    }>;
   };
   users: Array<{
     id: string;
@@ -48,6 +53,7 @@ type ProjectTaskComposerProps = {
 type TaskCreateFormState = {
   title: string;
   assigneeIds: string[];
+  dependencyIds: string[];
   status: TaskStatus;
   priority: TaskPriority;
   type: TaskType;
@@ -70,6 +76,7 @@ export function ProjectTaskComposer({
   const [form, setForm] = useState<TaskCreateFormState>({
     title: "",
     assigneeIds: [],
+    dependencyIds: [],
     status: TaskStatus.TODO,
     priority: TaskPriority.MEDIUM,
     type: TaskType.FEATURE,
@@ -89,6 +96,7 @@ export function ProjectTaskComposer({
         projectId: project.id,
         sprintId: form.sprintId || null,
         assigneeIds: form.assigneeIds,
+        dependencyIds: form.dependencyIds,
         status: form.status,
         priority: form.priority,
         type: form.type,
@@ -366,6 +374,39 @@ export function ProjectTaskComposer({
                   <MenuItem value="yes">Bloqueada</MenuItem>
                 </TextField>
               </Box>
+
+              <TextField
+                size="small"
+                label="Dependências"
+                select
+                SelectProps={{
+                  multiple: true,
+                  renderValue: (selected) =>
+                    (selected as string[])
+                      .map((taskId) => {
+                        const dependency = project.tasks.find((task) => task.id === taskId);
+
+                        return dependency
+                          ? `${dependency.code} · ${dependency.title}`
+                          : "Tarefa";
+                      })
+                      .join(", "),
+                }}
+                value={form.dependencyIds}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    dependencyIds: event.target.value as unknown as string[],
+                  }))
+                }
+              >
+                {project.tasks.map((task) => (
+                  <MenuItem key={task.id} value={task.id}>
+                    <Checkbox checked={form.dependencyIds.includes(task.id)} />
+                    <ListItemText primary={task.title} secondary={task.code} />
+                  </MenuItem>
+                ))}
+              </TextField>
 
               <TextField
                 label="Descrição"

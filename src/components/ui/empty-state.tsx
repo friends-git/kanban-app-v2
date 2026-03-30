@@ -4,11 +4,13 @@ import { Box, Stack, Typography } from "@mui/material";
 type EmptyStateProps = {
   message: string;
   title?: string;
+  action?: React.ReactNode;
 };
 
 export function EmptyState({
   message,
   title = "Nada para exibir nesta visão",
+  action,
 }: EmptyStateProps) {
   return (
     <Stack
@@ -41,6 +43,7 @@ export function EmptyState({
       <Typography color="text.secondary" sx={{ maxWidth: 420 }}>
         {message}
       </Typography>
+      {action}
     </Stack>
   );
 }

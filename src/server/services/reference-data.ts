@@ -2,7 +2,7 @@ import "server-only";
 
 import { GlobalRole } from "@prisma/client";
 import { db } from "@/server/db";
-import { canReadProject } from "@/server/permissions";
+import { canReadProject, canReadTask } from "@/server/permissions";
 
 type Viewer = {
   id: string;
@@ -101,6 +101,23 @@ export async function listTaskFormOptions(user: Viewer) {
             role: true,
           },
         },
+        tasks: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            visibility: true,
+            creatorId: true,
+            assignees: {
+              select: {
+                userId: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
       orderBy: {
         name: "asc",
@@ -122,6 +139,24 @@ export async function listTaskFormOptions(user: Viewer) {
         id: project.id,
         name: project.name,
         sprints: project.sprints,
+        tasks: project.tasks
+          .filter((task) =>
+            canReadTask(user, {
+              creatorId: task.creatorId,
+              visibility: task.visibility,
+              assignees: task.assignees,
+              project: {
+                visibility: project.visibility,
+                ownerId: project.ownerId,
+                members: project.members,
+              },
+            }),
+          )
+          .map((task) => ({
+            id: task.id,
+            code: task.code,
+            title: task.title,
+          })),
       })),
   };
 }
